@@ -4,73 +4,63 @@ import {
   onSnapshot,
   query,
   orderBy,
+  addDoc,
+  updateDoc,
+  doc,
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 let editingId = null;
-let currentEventsData = {};
 window.allEventsData = [];
 
-// Función central para resetear el formulario
+function showNotification(message) {
+  const toast = document.createElement("div");
+  toast.innerHTML = `🔔 ${message}`;
+  toast.style = `
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    background: #2c3e50; color: white; padding: 12px 25px; border-radius: 30px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3); z-index: 10000; font-weight: bold;
+    border: 2px solid #d4af37; animation: slideUp 0.5s forwards;
+  `;
+  document.body.appendChild(toast);
+  setTimeout(() => {
+    toast.remove();
+  }, 4000);
+}
+
+// Inyectar animación CSS
+const style = document.createElement("style");
+style.innerHTML = `@keyframes slideUp { from { bottom: -50px; opacity: 0; } to { bottom: 20px; opacity: 1; } }`;
+document.head.appendChild(style);
+
 export function resetForm() {
   editingId = null;
   const form = document.getElementById("eventFormContainer");
   if (form) {
     form.style.display = "none";
-    // Limpiamos todos los inputs y selects
     form.querySelectorAll("input, select, textarea").forEach((el) => {
-      if (el.id !== "type" && el.id !== "status" && el.id !== "paid")
-        el.value = "";
+      if (!["type", "status", "paid"].includes(el.id)) el.value = "";
     });
   }
-  const title = document.getElementById("formTitle");
-  if (title) title.innerText = "Nuevo Evento";
-
-  const updateBtn = document.getElementById("updateBtn");
-  const addBtn = document.getElementById("addBtn");
-  if (updateBtn) updateBtn.style.display = "none";
-  if (addBtn) addBtn.style.display = "inline-block";
-}
-
-function formatDate(dateStr) {
-  if (!dateStr) return "";
-  const d = new Date(dateStr + "T00:00:00");
-  return d.toLocaleDateString("es-AR");
-}
-
-function getMonthLabel(dateStr) {
-  const d = new Date(dateStr + "T00:00:00");
-  const months = [
-    "Enero",
-    "Febrero",
-    "Marzo",
-    "Abril",
-    "Mayo",
-    "Junio",
-    "Julio",
-    "Agosto",
-    "Septiembre",
-    "Octubre",
-    "Noviembre",
-    "Diciembre",
-  ];
-  return `${months[d.getMonth()]} ${d.getFullYear()}`;
+  document.getElementById("formTitle").innerText = "Nuevo Evento";
+  document.getElementById("updateBtn").style.display = "none";
+  document.getElementById("addBtn").style.display = "inline-block";
 }
 
 export function initEvents() {
-  // Configuración de botones
-  const cancelBtn = document.getElementById("cancelFormBtn");
-  if (cancelBtn) cancelBtn.addEventListener("click", resetForm);
+  document
+    .getElementById("cancelFormBtn")
+    ?.addEventListener("click", resetForm);
+  document.getElementById("addBtn")?.addEventListener("click", saveEvent);
+  document
+    .getElementById("updateBtn")
+    ?.addEventListener("click", updateExistingEvent);
 
-  const showFormBtn = document.getElementById("showFormBtn");
-  if (showFormBtn) {
-    showFormBtn.addEventListener("click", () => {
-      resetForm(); // Limpiamos cualquier dato previo al abrir
-      document.getElementById("eventFormContainer").style.display = "block";
-    });
-  }
+  document.getElementById("showFormBtn")?.addEventListener("click", () => {
+    resetForm();
+    document.getElementById("eventFormContainer").style.display = "block";
+  });
 
-  const eventsList = document.getElementById("eventsList");
-  eventsList.addEventListener("click", (e) => {
+  document.getElementById("eventsList").addEventListener("click", (e) => {
     const card = e.target.closest(".card");
     if (card) {
       const id = card.dataset.id;
@@ -81,6 +71,102 @@ export function initEvents() {
 
   loadEvents();
   initSearch();
+}
+
+async function saveEvent() {
+  const eventData = getFormData();
+  eventData.ultimoCambioPor = window.userName;
+  try {
+    await addDoc(collection(db, "events"), eventData);
+    resetForm();
+  } catch (error) {
+    console.error("Error al guardar:", error);
+  }
+}
+
+async function updateExistingEvent() {
+  if (!editingId) return;
+  const eventData = getFormData();
+  eventData.ultimoCambioPor = window.userName;
+  try {
+    await updateDoc(doc(db, "events", editingId), eventData);
+    resetForm();
+  } catch (error) {
+    console.error("Error al actualizar:", error);
+  }
+}
+
+function getFormData() {
+  return {
+    date: document.getElementById("date").value,
+    type: document.getElementById("type").value,
+    client: document.getElementById("client").value,
+    cuit: document.getElementById("cuit").value,
+    place: document.getElementById("place").value,
+    guests: document.getElementById("guests").value,
+    total: document.getElementById("total").value,
+    deposit: document.getElementById("deposit").value,
+    status: document.getElementById("status").value,
+    paid: document.getElementById("paid").value === "true",
+    invoiceNumber: document.getElementById("invoiceNumber").value,
+    notes: document.getElementById("notes").value,
+  };
+}
+
+function loadEvents() {
+  const q = query(collection(db, "events"), orderBy("date"));
+  onSnapshot(q, (snap) => {
+    snap.docChanges().forEach((change) => {
+      if (!snap.metadata.hasPendingWrites) {
+        const ev = change.doc.data();
+        const autor = ev.ultimoCambioPor || "Alguien";
+        if (change.type === "added")
+          showNotification(`${autor} creó evento: ${ev.client}`);
+        if (change.type === "modified")
+          showNotification(`${autor} editó evento: ${ev.client}`);
+      }
+    });
+
+    window.allEventsData = [];
+    snap.forEach((d) => {
+      window.allEventsData.push({ ...d.data(), id: d.id });
+    });
+    renderFilteredEvents(window.allEventsData);
+  });
+}
+
+// ... (renderFilteredEvents, updateStats, createCard y demás funciones de renderizado permanecen igual)
+// Asegúrate de pegar aquí las funciones de renderizado que usamos en el paso anterior.
+
+export function fillFormForEdit(e, id) {
+  editingId = id;
+  const fields = [
+    "date",
+    "type",
+    "client",
+    "cuit",
+    "place",
+    "guests",
+    "total",
+    "deposit",
+    "status",
+    "invoiceNumber",
+    "notes",
+  ];
+  fields.forEach((f) => {
+    if (document.getElementById(f))
+      document.getElementById(f).value = e[f] || "";
+  });
+  if (document.getElementById("paid"))
+    document.getElementById("paid").value = e.paid ? "true" : "false";
+
+  document.getElementById("formTitle").innerText = "Editando Evento";
+  document.getElementById("updateBtn").style.display = "inline-block";
+  document.getElementById("addBtn").style.display = "none";
+  document.getElementById("eventFormContainer").style.display = "block";
+  document
+    .getElementById("eventFormContainer")
+    .scrollIntoView({ behavior: "smooth" });
 }
 
 function initSearch() {
@@ -112,22 +198,10 @@ function updateStats(events) {
   const senasEl = document.getElementById("senasMes");
   const saldoEl = document.getElementById("saldoMes");
   const countEl = document.getElementById("eventosMes");
-
   if (totalEl) totalEl.innerText = `$${totalMes.toLocaleString()}`;
   if (senasEl) senasEl.innerText = `$${senasMes.toLocaleString()}`;
   if (saldoEl) saldoEl.innerText = `$${(totalMes - senasMes).toLocaleString()}`;
   if (countEl) countEl.innerText = events.length;
-}
-
-function loadEvents() {
-  const q = query(collection(db, "events"), orderBy("date"));
-  onSnapshot(q, (snap) => {
-    window.allEventsData = [];
-    snap.forEach((d) => {
-      window.allEventsData.push({ ...d.data(), id: d.id });
-    });
-    renderFilteredEvents(window.allEventsData);
-  });
 }
 
 export function renderFilteredEvents(events) {
@@ -137,7 +211,6 @@ export function renderFilteredEvents(events) {
   const today = new Date().toISOString().split("T")[0];
   const upcomingGroups = {};
   const pastGroups = {};
-
   events.forEach((e) => {
     const monthKey = getMonthLabel(e.date);
     const isPast = e.date < today;
@@ -149,7 +222,6 @@ export function renderFilteredEvents(events) {
       upcomingGroups[monthKey].push(createCard(e, e.id));
     }
   });
-
   updateStats(events);
   updateClientDatalist(events);
   renderGroup(upcomingGroups, "📅 Próximos Eventos", "#27ae60");
@@ -192,35 +264,29 @@ function createCard(e, id) {
   `;
 }
 
-export function fillFormForEdit(e, id) {
-  editingId = id;
-  const fields = [
-    "date",
-    "type",
-    "client",
-    "cuit",
-    "place",
-    "guests",
-    "total",
-    "deposit",
-    "status",
-    "invoiceNumber",
-    "notes",
+function getMonthLabel(dateStr) {
+  const d = new Date(dateStr + "T00:00:00");
+  const months = [
+    "Enero",
+    "Febrero",
+    "Marzo",
+    "Abril",
+    "Mayo",
+    "Junio",
+    "Julio",
+    "Agosto",
+    "Septiembre",
+    "Octubre",
+    "Noviembre",
+    "Diciembre",
   ];
-  fields.forEach((f) => {
-    if (document.getElementById(f))
-      document.getElementById(f).value = e[f] || "";
-  });
-  if (document.getElementById("paid"))
-    document.getElementById("paid").value = e.paid ? "true" : "false";
+  return `${months[d.getMonth()]} ${d.getFullYear()}`;
+}
 
-  document.getElementById("formTitle").innerText = "Editando Evento";
-  document.getElementById("updateBtn").style.display = "inline-block";
-  document.getElementById("addBtn").style.display = "none";
-  document.getElementById("eventFormContainer").style.display = "block";
-  document
-    .getElementById("eventFormContainer")
-    .scrollIntoView({ behavior: "smooth" });
+function formatDate(dateStr) {
+  if (!dateStr) return "";
+  const d = new Date(dateStr + "T00:00:00");
+  return d.toLocaleDateString("es-AR");
 }
 
 window.addEventListener("filterChanged", (e) => {

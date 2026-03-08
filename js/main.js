@@ -1,10 +1,48 @@
 import { initEvents } from "./events.js";
 import { initCalendar } from "./calendar.js";
 import { auth } from "./auth.js";
-import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import {
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
+  signOut,
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+const usuariosMap = {
+  "laura@ejemplo.com": "Laura",
+  "mariano@ejemplo.com": "Mariano",
+  "sebastian@ejemplo.com": "Sebastián",
+};
 
 document.addEventListener("DOMContentLoaded", () => {
-  // --- 1. Botón Estadísticas ---
+  // --- LÓGICA DE LOGIN ---
+  const loginBtn = document.getElementById("loginBtn");
+  if (loginBtn) {
+    loginBtn.addEventListener("click", async () => {
+      const email = document.getElementById("email").value;
+      const pass = document.getElementById("password").value;
+      try {
+        await signInWithEmailAndPassword(auth, email, pass);
+        // El onAuthStateChanged se encargará del resto
+      } catch (error) {
+        alert("Error al ingresar: " + error.message);
+      }
+    });
+  }
+
+  // --- LÓGICA DE LOGOUT (Cerrar Sesión) ---
+  const logoutBtn = document.getElementById("logoutBtn");
+  if (logoutBtn) {
+    logoutBtn.addEventListener("click", async () => {
+      try {
+        await signOut(auth);
+        location.reload(); // Recargamos para limpiar todo
+      } catch (error) {
+        console.error("Error al salir:", error);
+      }
+    });
+  }
+
+  // --- BOTÓN ESTADÍSTICAS ---
   const statsBtn = document.getElementById("toggleStatsBtn");
   const statsContainer = document.getElementById("statsContainer");
   if (statsBtn && statsContainer) {
@@ -17,42 +55,34 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // --- 2. Botón Nuevo Evento ---
-  const showFormBtn = document.getElementById("showFormBtn");
-  const eventForm = document.getElementById("eventFormContainer");
-  if (showFormBtn && eventForm) {
-    showFormBtn.addEventListener("click", () => {
-      eventForm.style.display = "block";
-      document.getElementById("formTitle").innerText = "Nuevo Evento";
-      document.getElementById("addBtn").style.display = "inline-block";
-      document.getElementById("updateBtn").style.display = "none";
-      eventForm.scrollIntoView({ behavior: "smooth" });
-    });
-  }
-
-  // --- 3. Filtro de Mes ---
+  // --- FILTRO DE MES ---
   const monthFilter = document.getElementById("monthFilter");
   if (monthFilter) {
     monthFilter.addEventListener("change", (e) => {
-      // Disparamos un evento personalizado para que events.js lo escuche
       window.dispatchEvent(
         new CustomEvent("filterChanged", { detail: e.target.value }),
       );
     });
   }
 
-  // --- 4. Autenticación ---
+  // --- CONTROL DE ESTADO DE USUARIO ---
   onAuthStateChanged(auth, (user) => {
     const loginDiv = document.getElementById("loginDiv");
     const appDiv = document.getElementById("appDiv");
+    const userDisplay = document.getElementById("userDisplay"); // Opcional: para mostrar el nombre arriba
+
     if (user) {
-      loginDiv.style.display = "none";
-      appDiv.style.display = "block";
+      if (loginDiv) loginDiv.style.display = "none";
+      if (appDiv) appDiv.style.display = "block";
+
+      window.userName = usuariosMap[user.email] || user.email.split("@")[0];
+      if (userDisplay) userDisplay.innerText = `Hola, ${window.userName}`;
+
       initEvents();
       initCalendar();
     } else {
-      loginDiv.style.display = "block";
-      appDiv.style.display = "none";
+      if (loginDiv) loginDiv.style.display = "block";
+      if (appDiv) appDiv.style.display = "none";
     }
   });
 });

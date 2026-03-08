@@ -1,5 +1,5 @@
 <!doctype html>
-<html>
+<html lang="es">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -14,19 +14,58 @@
 
   <body>
     <header>
-      <img src="./logoB.png" class="logo" />
+      <img src="./logoB.png" class="logo" alt="Logo" />
       <span class="header-title">Agenda de Eventos</span>
       <button id="darkBtn">🌙</button>
     </header>
 
     <div class="container" id="loginDiv">
-      <h3>Login</h3>
-      <input type="email" id="email" placeholder="Email" />
-      <input type="password" id="password" placeholder="Contraseña" />
-      <button id="loginBtn">Ingresar</button>
+      <div style="text-align: center; margin-bottom: 20px">
+        <h3 style="color: var(--gold)">Bienvenido a JOOLI</h3>
+        <p>Ingresa tus credenciales para continuar</p>
+      </div>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="email" placeholder="ejemplo@correo.com" />
+      </div>
+      <div class="form-group">
+        <label>Contraseña</label>
+        <input type="password" id="password" placeholder="••••••••" />
+      </div>
+      <button id="loginBtn" style="width: 100%; margin-top: 10px">
+        Ingresar
+      </button>
     </div>
 
     <div class="container" id="appDiv" style="display: none">
+      <div
+        style="
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 20px;
+          background: #f0f0f0;
+          padding: 10px 15px;
+          border-radius: 8px;
+        "
+      >
+        <strong id="userDisplay" style="color: #333">Hola, Usuario</strong>
+        <button
+          id="logoutBtn"
+          style="
+            background: #e74c3c;
+            color: white;
+            padding: 5px 12px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.85em;
+          "
+        >
+          Cerrar Sesión
+        </button>
+      </div>
+
       <div class="filter-bar" style="margin-bottom: 10px">
         <button
           id="toggleStatsBtn"
@@ -212,7 +251,6 @@
         <datalist id="clientList"></datalist>
       </div>
 
-      <h3>Próximos Eventos</h3>
       <div id="eventsList"></div>
     </div>
   </body>
