@@ -16,17 +16,31 @@ body.dark {
 }
 
 header {
-  background: #111;
-  color: var(--gold);
-  padding: 20px;
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  padding: 10px 20px;
+  background: #000;
+  border-bottom: 2px solid var(--gold);
 }
 
-header img {
-  height: 40px;
-  border-radius: 6px;
+.logo-container,
+.header-right {
+  flex: 1; /* Ambos ocupan el mismo espacio */
+}
+
+.header-right {
+  display: flex;
+  justify-content: flex-end; /* Alinea el botón a la derecha */
+}
+
+.header-title {
+  flex: 2; /* El título ocupa el centro */
+  text-align: center;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin: 0;
 }
 
 button {
@@ -129,10 +143,11 @@ textarea {
 /* Estilo para el nuevo título resaltado */
 .header-title {
   font-size: 1.2rem; /* Tamaño más grande */
-  font-weight: 800; /* Muy grueso (resaltado) */
+  font-weight: 600; /* Muy grueso (resaltado) */
   color: #d4af37; /* Color dorado (o el que prefieras) */
   margin-left: 12px; /* Espacio entre el logo y el texto */
   letter-spacing: 0.5px; /* Un toque de elegancia */
+  text-align: center;
   text-transform: uppercase; /* Opcional: todo en mayúsculas */
 }
 
@@ -342,4 +357,49 @@ body.dark .fc {
   cursor: pointer;
   margin-bottom: 10px;
   font-weight: bold;
+}
+#notificationPanel {
+  position: absolute;
+  top: 45px;
+  right: 10px;
+  width: 250px;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  display: none; /* Oculto por defecto */
+  z-index: 1000;
+  padding: 10px;
+}
+#notificationPanel ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+#notificationPanel li {
+  padding: 8px;
+  border-bottom: 1px solid #eee;
+  font-size: 0.9em;
+}
+
+.nav-btn {
+  padding: 10px 20px;
+  border: 1px solid #d4af37;
+  background: white;
+  color: #333;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  font-weight: 600;
+}
+
+.nav-btn.active {
+  background: #b8962e; /* Un tono de dorado más oscuro y profundo */
+  color: #ffffff; /* Blanco puro para máxima legibilidad */
+  border-color: #947725;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2); /* Efecto de profundidad */
+}
+
+.nav-btn:hover:not(.active) {
+  background: #fdf5d6;
 }

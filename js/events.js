@@ -11,26 +11,47 @@ import {
 
 let editingId = null;
 window.allEventsData = [];
+let unreadNotifications = [];
 
-function showNotification(message) {
-  const toast = document.createElement("div");
-  toast.innerHTML = `🔔 ${message}`;
-  toast.style = `
-    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-    background: #2c3e50; color: white; padding: 12px 25px; border-radius: 30px;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.3); z-index: 10000; font-weight: bold;
-    border: 2px solid #d4af37; animation: slideUp 0.5s forwards;
-  `;
-  document.body.appendChild(toast);
-  setTimeout(() => {
-    toast.remove();
-  }, 4000);
+// --- LÓGICA DE NOTIFICACIONES ---
+function updateNotificationUI() {
+  const countEl = document.getElementById("notifCount");
+  const panel = document.getElementById("notificationPanel");
+  if (!countEl || !panel) return;
+
+  if (unreadNotifications.length > 0) {
+    countEl.innerText = unreadNotifications.length;
+    countEl.style.display = "block";
+  } else {
+    countEl.style.display = "none";
+    panel.style.display = "none";
+  }
+
+  const list = panel.querySelector("ul");
+  list.innerHTML = unreadNotifications.map((n) => `<li>${n}</li>`).join("");
 }
 
-// Inyectar animación CSS
-const style = document.createElement("style");
-style.innerHTML = `@keyframes slideUp { from { bottom: -50px; opacity: 0; } to { bottom: 20px; opacity: 1; } }`;
-document.head.appendChild(style);
+document.addEventListener("DOMContentLoaded", () => {
+  if (!document.getElementById("notificationPanel")) {
+    const panel = document.createElement("div");
+    panel.id = "notificationPanel";
+    panel.innerHTML = "<strong>Novedades</strong><ul></ul>";
+    document.body.appendChild(panel);
+  }
+
+  const bell = document.getElementById("notificationWrapper");
+  const panel = document.getElementById("notificationPanel");
+
+  if (bell) {
+    bell.addEventListener("click", () => {
+      panel.style.display = panel.style.display === "block" ? "none" : "block";
+      if (panel.style.display === "none") {
+        unreadNotifications = [];
+        updateNotificationUI();
+      }
+    });
+  }
+});
 
 export function resetForm() {
   editingId = null;
@@ -117,13 +138,20 @@ function loadEvents() {
   const q = query(collection(db, "events"), orderBy("date"));
   onSnapshot(q, (snap) => {
     snap.docChanges().forEach((change) => {
-      if (!snap.metadata.hasPendingWrites) {
+      if (!snap.metadata.hasPendingWrites && change.type !== "removed") {
         const ev = change.doc.data();
-        const autor = ev.ultimoCambioPor || "Alguien";
-        if (change.type === "added")
-          showNotification(`${autor} creó evento: ${ev.client}`);
-        if (change.type === "modified")
-          showNotification(`${autor} editó evento: ${ev.client}`);
+        if (ev.ultimoCambioPor !== window.userName) {
+          const autor = ev.ultimoCambioPor || "Alguien";
+          // Formato solicitado:
+          // Nuevo: "Nombre" creó el evento "Cliente" para el día "Fecha"
+          // Editado: "Nombre" modificó el evento "Cliente" para el día "Fecha"
+          const accion =
+            change.type === "added" ? "creó el evento" : "modificó el evento";
+          const mensaje = `${autor} ${accion} "${ev.client}" para el día ${ev.date}.`;
+
+          unreadNotifications.push(mensaje);
+          updateNotificationUI();
+        }
       }
     });
 
@@ -134,9 +162,6 @@ function loadEvents() {
     renderFilteredEvents(window.allEventsData);
   });
 }
-
-// ... (renderFilteredEvents, updateStats, createCard y demás funciones de renderizado permanecen igual)
-// Asegúrate de pegar aquí las funciones de renderizado que usamos en el paso anterior.
 
 export function fillFormForEdit(e, id) {
   editingId = id;

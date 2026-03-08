@@ -14,9 +14,48 @@
 
   <body>
     <header>
-      <img src="./logoB.png" class="logo" alt="Logo" />
+      <div class="logo-container">
+        <img src="./logoB.png" class="logo" alt="Logo" />
+      </div>
+
       <span class="header-title">Agenda de Eventos</span>
-      <button id="darkBtn">🌙</button>
+
+      <div class="header-right">
+        <div
+          id="notificationWrapper"
+          style="position: relative; cursor: pointer; margin-right: 15px"
+        >
+          <span>🔔</span>
+          <span
+            id="notifCount"
+            style="
+              position: absolute;
+              top: -5px;
+              right: -5px;
+              background: red;
+              color: white;
+              border-radius: 50%;
+              padding: 2px 6px;
+              font-size: 10px;
+              display: none;
+            "
+            >0</span
+          >
+        </div>
+        <button
+          id="logoutBtn"
+          style="
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 5px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+          "
+        >
+          Salir
+        </button>
+      </div>
     </header>
 
     <div class="container" id="loginDiv">
@@ -38,50 +77,52 @@
     </div>
 
     <div class="container" id="appDiv" style="display: none">
-      <div
+      <nav
         style="
           display: flex;
-          justify-content: space-between;
-          align-items: center;
+          gap: 10px;
           margin-bottom: 20px;
-          background: #f0f0f0;
-          padding: 10px 15px;
-          border-radius: 8px;
+          justify-content: center;
         "
       >
-        <strong id="userDisplay" style="color: #333">Hola, Usuario</strong>
         <button
-          id="logoutBtn"
-          style="
-            background: #e74c3c;
-            color: white;
-            padding: 5px 12px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 0.85em;
-          "
+          id="btn-calendar"
+          class="nav-btn active"
+          onclick="showSection('calendar')"
         >
-          Cerrar Sesión
+          📅 Calendario
         </button>
-      </div>
+        <button
+          id="btn-eventsList"
+          class="nav-btn"
+          onclick="showSection('eventsList')"
+        >
+          📜 Lista de Eventos
+        </button>
+        <button
+          id="btn-statsContainer"
+          class="nav-btn"
+          onclick="showSection('statsContainer')"
+        >
+          📊 Estadísticas
+        </button>
+      </nav>
 
-      <div class="filter-bar" style="margin-bottom: 10px">
-        <button
-          id="toggleStatsBtn"
+      <div id="searchSection" style="margin: 20px 0; display: none">
+        <input
+          type="text"
+          id="searchInput"
+          placeholder="🔍 Buscar cliente..."
+          list="clientList"
           style="
-            background: #3498db;
-            color: white;
             width: 100%;
-            padding: 10px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: bold;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 16px;
           "
-        >
-          Ver Estadísticas y Filtros
-        </button>
+        />
+        <datalist id="clientList"></datalist>
       </div>
 
       <div
@@ -105,7 +146,6 @@
         >
           <h3 style="margin: 0">Estadísticas del Mes</h3>
           <div class="form-group" style="margin: 0">
-            <label style="font-size: 0.8em; display: block">Filtrar Mes:</label>
             <input
               type="month"
               id="monthFilter"
@@ -123,26 +163,35 @@
           "
         >
           <div style="text-align: center">
-            <strong>Total:</strong> <br /><span id="totalMes">0</span>
+            <strong>Total:</strong><br /><span id="totalMes">0</span>
           </div>
           <div style="text-align: center">
-            <strong>Señas:</strong> <br /><span id="senasMes">0</span>
+            <strong>Señas:</strong><br /><span id="senasMes">0</span>
           </div>
           <div style="text-align: center">
-            <strong>Saldo:</strong> <br /><span id="saldoMes">0</span>
+            <strong>Saldo:</strong><br /><span id="saldoMes">0</span>
           </div>
           <div style="text-align: center">
-            <strong>Eventos:</strong> <br /><span id="eventosMes">0</span>
+            <strong>Eventos:</strong><br /><span id="eventosMes">0</span>
           </div>
         </div>
       </div>
 
-      <div class="filter-bar" style="text-align: right; margin-bottom: 15px">
+      <div
+        id="addEventContainer"
+        style="text-align: center; margin-bottom: 15px"
+      >
         <button
           id="showFormBtn"
-          style="background: var(--gold); color: #111; padding: 10px 20px"
+          style="
+            background: var(--gold);
+            color: #111;
+            padding: 10px 25px;
+            border-radius: 20px;
+            cursor: pointer;
+          "
         >
-          + Nuevo Evento
+          + Agregar Evento
         </button>
       </div>
 
@@ -156,8 +205,6 @@
           color: #111;
         "
       ></div>
-
-      <hr />
 
       <div
         id="eventFormContainer"
@@ -234,24 +281,7 @@
         </div>
       </div>
 
-      <div class="search-bar" style="margin: 20px 0">
-        <input
-          type="text"
-          id="searchInput"
-          placeholder="🔍 Buscar cliente..."
-          list="clientList"
-          style="
-            width: 100%;
-            padding: 12px;
-            border: 1px solid #ccc;
-            border-radius: 8px;
-            font-size: 16px;
-          "
-        />
-        <datalist id="clientList"></datalist>
-      </div>
-
-      <div id="eventsList"></div>
+      <div id="eventsList" style="display: none"></div>
     </div>
   </body>
 </html>
