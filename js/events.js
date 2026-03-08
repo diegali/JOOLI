@@ -8,6 +8,28 @@ import {
 
 let editingId = null;
 let currentEventsData = {};
+window.allEventsData = [];
+
+// Función central para resetear el formulario
+export function resetForm() {
+  editingId = null;
+  const form = document.getElementById("eventFormContainer");
+  if (form) {
+    form.style.display = "none";
+    // Limpiamos todos los inputs y selects
+    form.querySelectorAll("input, select, textarea").forEach((el) => {
+      if (el.id !== "type" && el.id !== "status" && el.id !== "paid")
+        el.value = "";
+    });
+  }
+  const title = document.getElementById("formTitle");
+  if (title) title.innerText = "Nuevo Evento";
+
+  const updateBtn = document.getElementById("updateBtn");
+  const addBtn = document.getElementById("addBtn");
+  if (updateBtn) updateBtn.style.display = "none";
+  if (addBtn) addBtn.style.display = "inline-block";
+}
 
 function formatDate(dateStr) {
   if (!dateStr) return "";
@@ -35,20 +57,30 @@ function getMonthLabel(dateStr) {
 }
 
 export function initEvents() {
-  const eventsList = document.getElementById("eventsList");
+  // Configuración de botones
+  const cancelBtn = document.getElementById("cancelFormBtn");
+  if (cancelBtn) cancelBtn.addEventListener("click", resetForm);
 
-  // Delegación de eventos para las tarjetas
+  const showFormBtn = document.getElementById("showFormBtn");
+  if (showFormBtn) {
+    showFormBtn.addEventListener("click", () => {
+      resetForm(); // Limpiamos cualquier dato previo al abrir
+      document.getElementById("eventFormContainer").style.display = "block";
+    });
+  }
+
+  const eventsList = document.getElementById("eventsList");
   eventsList.addEventListener("click", (e) => {
     const card = e.target.closest(".card");
     if (card) {
       const id = card.dataset.id;
-      const eventData = currentEventsData[id];
+      const eventData = window.allEventsData.find((ev) => ev.id === id);
       if (eventData) fillFormForEdit(eventData, id);
     }
   });
 
   loadEvents();
-  initSearch(); // Aseguramos que el buscador se inicialice
+  initSearch();
 }
 
 function initSearch() {
@@ -73,38 +105,55 @@ function updateClientDatalist(events) {
     .join("");
 }
 
+function updateStats(events) {
+  const totalMes = events.reduce((sum, e) => sum + Number(e.total || 0), 0);
+  const senasMes = events.reduce((sum, e) => sum + Number(e.deposit || 0), 0);
+  const totalEl = document.getElementById("totalMes");
+  const senasEl = document.getElementById("senasMes");
+  const saldoEl = document.getElementById("saldoMes");
+  const countEl = document.getElementById("eventosMes");
+
+  if (totalEl) totalEl.innerText = `$${totalMes.toLocaleString()}`;
+  if (senasEl) senasEl.innerText = `$${senasMes.toLocaleString()}`;
+  if (saldoEl) saldoEl.innerText = `$${(totalMes - senasMes).toLocaleString()}`;
+  if (countEl) countEl.innerText = events.length;
+}
+
 function loadEvents() {
   const q = query(collection(db, "events"), orderBy("date"));
   onSnapshot(q, (snap) => {
-    const eventsList = document.getElementById("eventsList");
-    if (!eventsList) return;
-    eventsList.innerHTML = "";
-    currentEventsData = {};
-    const allEvents = [];
-    const today = new Date().toISOString().split("T")[0];
-    const upcomingGroups = {};
-    const pastGroups = {};
-
+    window.allEventsData = [];
     snap.forEach((d) => {
-      const e = d.data();
-      currentEventsData[d.id] = e;
-      allEvents.push(e);
-      const monthKey = getMonthLabel(e.date);
-      const isPast = e.date < today;
-
-      if (isPast) {
-        if (!pastGroups[monthKey]) pastGroups[monthKey] = [];
-        pastGroups[monthKey].push(createCard(e, d.id));
-      } else {
-        if (!upcomingGroups[monthKey]) upcomingGroups[monthKey] = [];
-        upcomingGroups[monthKey].push(createCard(e, d.id));
-      }
+      window.allEventsData.push({ ...d.data(), id: d.id });
     });
-
-    renderGroup(upcomingGroups, "📅 Próximos Eventos", "#27ae60");
-    renderGroup(pastGroups, "📜 Historial", "#7f8c8d");
-    updateClientDatalist(allEvents);
+    renderFilteredEvents(window.allEventsData);
   });
+}
+
+export function renderFilteredEvents(events) {
+  const eventsList = document.getElementById("eventsList");
+  if (!eventsList) return;
+  eventsList.innerHTML = "";
+  const today = new Date().toISOString().split("T")[0];
+  const upcomingGroups = {};
+  const pastGroups = {};
+
+  events.forEach((e) => {
+    const monthKey = getMonthLabel(e.date);
+    const isPast = e.date < today;
+    if (isPast) {
+      if (!pastGroups[monthKey]) pastGroups[monthKey] = [];
+      pastGroups[monthKey].push(createCard(e, e.id));
+    } else {
+      if (!upcomingGroups[monthKey]) upcomingGroups[monthKey] = [];
+      upcomingGroups[monthKey].push(createCard(e, e.id));
+    }
+  });
+
+  updateStats(events);
+  updateClientDatalist(events);
+  renderGroup(upcomingGroups, "📅 Próximos Eventos", "#27ae60");
+  renderGroup(pastGroups, "📜 Historial", "#7f8c8d");
 }
 
 function renderGroup(groups, sectionTitle, color) {
@@ -113,7 +162,7 @@ function renderGroup(groups, sectionTitle, color) {
   eventsList.innerHTML += `<h3 style="color:${color}; margin-top:30px;">${sectionTitle}</h3>`;
   for (const month in groups) {
     eventsList.innerHTML += `<h4 style="margin: 15px 0 5px 0; color: #d4af37;">${month}</h4>`;
-    groups[month].forEach((card) => (eventsList.innerHTML += card));
+    eventsList.innerHTML += groups[month].join("");
   }
 }
 
@@ -126,8 +175,6 @@ function createCard(e, id) {
     Cancelado: "#c0392b",
   };
   const statusStyle = `background:${colors[e.status] || "#666"}; color:white; padding:4px 10px; border-radius:12px; font-size:0.75em; font-weight:bold; display:inline-block; min-width:80px; text-align:center;`;
-
-  // JERARQUÍA CORREGIDA: Fecha arriba, Cliente resaltado, Tipo debajo
   return `
     <div class="card" data-id="${id}" style="cursor:pointer; border:1px solid #ddd; padding:12px; border-radius:8px; margin-bottom:10px; background:white;">
       <div style="display:flex; justify-content:space-between; align-items:flex-start;">
@@ -146,6 +193,7 @@ function createCard(e, id) {
 }
 
 export function fillFormForEdit(e, id) {
+  editingId = id;
   const fields = [
     "date",
     "type",
@@ -165,7 +213,7 @@ export function fillFormForEdit(e, id) {
   });
   if (document.getElementById("paid"))
     document.getElementById("paid").value = e.paid ? "true" : "false";
-  editingId = id;
+
   document.getElementById("formTitle").innerText = "Editando Evento";
   document.getElementById("updateBtn").style.display = "inline-block";
   document.getElementById("addBtn").style.display = "none";
@@ -174,3 +222,15 @@ export function fillFormForEdit(e, id) {
     .getElementById("eventFormContainer")
     .scrollIntoView({ behavior: "smooth" });
 }
+
+window.addEventListener("filterChanged", (e) => {
+  const selectedMonth = e.detail;
+  if (!selectedMonth) {
+    renderFilteredEvents(window.allEventsData);
+    return;
+  }
+  const filtered = window.allEventsData.filter((ev) =>
+    ev.date.startsWith(selectedMonth),
+  );
+  renderFilteredEvents(filtered);
+});
