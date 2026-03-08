@@ -1,92 +1,88 @@
 import { db } from "./auth.js";
-import { highlightCard } from "./ui.js";
 import { fillFormForEdit } from "./events.js";
 import {
   collection,
   onSnapshot,
   query,
-  orderBy
+  orderBy,
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 let calendar;
 
 export function initCalendar() {
   const calendarEl = document.getElementById("calendar");
-  
-  if (!calendarEl) return; // Seguridad
+  if (!calendarEl) return;
 
-  // Destruir si ya existe
-  if (calendar) { calendar.destroy(); }
+  if (calendar) {
+    calendar.destroy();
+  }
 
- calendar = new FullCalendar.Calendar(calendarEl, {
-    initialView: 'dayGridMonth',
-    locale: 'es',
-    height: 'auto', // Esto ayuda mucho a que no ocupe espacio innecesario
+  calendar = new FullCalendar.Calendar(calendarEl, {
+    initialView: "dayGridMonth",
+    locale: "es",
+    height: "auto",
     headerToolbar: {
-      left: 'prev,next', // Quitamos 'today' en móvil si molesta
-      center: 'title',
-      right: 'dayGridMonth' // Quitamos 'timeGridWeek' si se ve muy mal
+      left: "prev,next",
+      center: "title",
+      right: "dayGridMonth",
     },
-    buttonText: {
-      today: 'Hoy',
-      month: 'Mes',
-      week: 'Semana'
+    // --- MEJORA: Abrir formulario al tocar un día vacío ---
+    dateClick: function (info) {
+      // Limpiamos el formulario para un nuevo evento
+      const addBtn = document.getElementById("addBtn");
+      const showFormBtn = document.getElementById("showFormBtn");
+
+      if (showFormBtn) showFormBtn.click(); // Disparamos la lógica de reset y apertura
+
+      // Ponemos automáticamente la fecha que tocaste
+      const dateInput = document.getElementById("date");
+      if (dateInput) dateInput.value = info.dateStr;
     },
-    // --- ESTO ES LO QUE FALTABA ---
-    eventClick: function(info) {
-      console.log("Clic en evento:", info.event.id);
-      
-      // 1. Cargamos los datos en el formulario usando la función que ya tenías
+
+    // --- MEJORA: Edición al tocar un evento ---
+    eventClick: function (info) {
+      // Usamos la función global de events.js que ya maneja el scroll y el título
       fillFormForEdit(info.event.extendedProps, info.event.id);
-      
-      // 2. Mostramos el contenedor del formulario que ocultamos antes
-      const formContainer = document.getElementById("eventFormContainer");
-      if (formContainer) {
-        formContainer.style.display = "block";
-        formContainer.scrollIntoView({ behavior: "smooth" });
-      }
-    }
-    // -------------------------------
+    },
   });
 
   calendar.render();
   loadCalendarEvents();
-  
-  // Forzar un refresco extra un poco más tarde
+
   setTimeout(() => {
     calendar.updateSize();
   }, 500);
 }
 
-// Nueva función para forzar el re-dibujado
 export function refreshCalendar() {
-  if (calendar) {
-    calendar.updateSize();
-  }
+  if (calendar) calendar.updateSize();
 }
 
 function loadCalendarEvents() {
   const q = query(collection(db, "events"), orderBy("date"));
 
   onSnapshot(q, (snap) => {
+    if (!calendar) return;
     const events = [];
-    snap.forEach(d => {
+
+    snap.forEach((d) => {
       const e = d.data();
+      // Mismo mapa de colores que en las tarjetas para consistencia visual
       const colors = {
-        "Presupuestado": "#f1c40f",
+        Presupuestado: "#f1c40f",
         "Seña pagada": "#e67e22",
-        "Confirmado": "#27ae60",
-        "Realizado": "#2980b9",
-        "Cancelado": "#c0392b"
+        Confirmado: "#27ae60",
+        Realizado: "#2980b9",
+        Cancelado: "#c0392b",
       };
 
       events.push({
         id: d.id,
-        title: `${e.type} - ${e.client}`,
+        title: e.client, // Título más corto para que quepa mejor en móvil
         start: e.date,
         backgroundColor: colors[e.status] || "#ccc",
         borderColor: colors[e.status] || "#ccc",
-        extendedProps: e
+        extendedProps: e,
       });
     });
 

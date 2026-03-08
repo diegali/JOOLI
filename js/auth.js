@@ -16,20 +16,20 @@ const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 
-export function initAuth(onLogin){
+export function initAuth(onLogin) {
 
   document.getElementById("loginBtn").onclick = () => {
 
     const email = document.getElementById("email").value;
     const password = document.getElementById("password").value;
 
-    signInWithEmailAndPassword(auth,email,password)
-      .catch(e=>alert(e.message));
+    signInWithEmailAndPassword(auth, email, password)
+      .catch(e => alert(e.message));
 
   };
 
-  onAuthStateChanged(auth,(user)=>{
-    if(user){
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
       onLogin(user);
     }
   });

@@ -1,53 +1,177 @@
-:root { --gold:#d4af37; --bg:#f4f1eb; }
-body { margin:0; font-family:Segoe UI; background:var(--bg); transition:0.3s; }
-body.dark { background:#121212; color:white; }
-
-header { background:#111; color:var(--gold); padding:20px; display:flex; justify-content:space-between; align-items:center; }
-header img { height:40px; border-radius:6px; }
-button { padding:10px 14px; border:none; border-radius:8px; cursor:pointer; background:#111; color:var(--gold); font-weight:600; }
-button:hover { background:var(--gold); color:#111; }
-
-.container { max-width:1100px; margin:auto; padding:20px; min-height:100vh; box-sizing:border-box; overflow:auto; }
-
-.stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:15px; margin-bottom:25px; }
-.stats div { background:var(--gold); padding:20px; border-radius:14px; text-align:center; color:#111; font-weight:bold; }
-.stats span { display:block; font-size:20px; margin-top:5px; }
-
-.form-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px; }
-.form-group { display:flex; flex-direction:column; }
-.form-group label { font-weight:600; margin-bottom:4px; font-size:14px; }
-input,select,textarea { width:100%; padding:10px; border-radius:6px; border:1px solid #ccc; box-sizing:border-box; }
-textarea { margin-top:5px; resize:vertical; }
-
-.card { background:white; padding:15px; margin-bottom:12px; border-radius:12px; box-shadow:0 5px 10px rgba(0,0,0,0.08); cursor:pointer; transition:0.3s; color:#111; }
-body.dark .card { background:#1e1e1e; color:white; }
-.card.selected { border:2px solid var(--gold); background:#fff7e0; }
-body.dark .card.selected { background:#333; color:white; border:2px solid var(--gold); }
-
-#calendar { 
-  margin: 20px 0; 
-  background: white; 
-  padding: 15px; 
-  border-radius: 12px; 
-  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+:root {
+  --gold: #d4af37;
+  --bg: #f4f1eb;
 }
 
-#addBtn, #updateBtn { margin-top:10px; }
-@media(max-width:700px){
-  .form-grid { grid-template-columns:1fr; }
-  .stats { grid-template-columns:1fr; }
-  #calendar { height:auto; }
+body {
+  margin: 0;
+  font-family: Segoe UI;
+  background: var(--bg);
+  transition: 0.3s;
 }
 
-#newBtn{
-background:#999;
-color:white;
-margin-left:6px;
+body.dark {
+  background: #121212;
+  color: white;
 }
 
-#newBtn:hover{
-background:#666;
+header {
+  background: #111;
+  color: var(--gold);
+  padding: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
+
+header img {
+  height: 40px;
+  border-radius: 6px;
+}
+
+button {
+  padding: 10px 14px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  background: #111;
+  color: var(--gold);
+  font-weight: 600;
+}
+
+button:hover {
+  background: var(--gold);
+  color: #111;
+}
+
+.container {
+  max-width: 1100px;
+  margin: auto;
+  padding: 20px;
+  min-height: 100vh;
+  box-sizing: border-box;
+  overflow: auto;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 15px;
+  margin-bottom: 25px;
+}
+
+.stats div {
+  background: var(--gold);
+  padding: 20px;
+  border-radius: 14px;
+  text-align: center;
+  color: #111;
+  font-weight: bold;
+}
+
+.stats span {
+  display: block;
+  font-size: 20px;
+  margin-top: 5px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group label {
+  font-weight: 600;
+  margin-bottom: 4px;
+  font-size: 14px;
+}
+
+input,
+select,
+textarea {
+  width: 100%;
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  box-sizing: border-box;
+}
+
+textarea {
+  margin-top: 5px;
+  resize: vertical;
+}
+
+.card {
+  background: white;
+  padding: 15px;
+  margin-bottom: 12px;
+  border-radius: 12px;
+  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.08);
+  cursor: pointer;
+  transition: 0.3s;
+  color: #111;
+}
+
+body.dark .card {
+  background: #1e1e1e;
+  color: white;
+}
+
+.card.selected {
+  border: 2px solid var(--gold);
+  background: #fff7e0;
+}
+
+body.dark .card.selected {
+  background: #333;
+  color: white;
+  border: 2px solid var(--gold);
+}
+
+#calendar {
+  margin: 20px 0;
+  background: white;
+  padding: 15px;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+#addBtn,
+#updateBtn {
+  margin-top: 10px;
+}
+
+@media(max-width:700px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .stats {
+    grid-template-columns: 1fr;
+  }
+
+  #calendar {
+    height: auto;
+  }
+}
+
+#newBtn {
+  background: #999;
+  color: white;
+  margin-left: 6px;
+}
+
+#newBtn:hover {
+  background: #666;
+}
+
 /* Estilos para los estados de los eventos */
 .status-badge {
   padding: 4px 8px;
@@ -60,23 +184,58 @@ background:#666;
 }
 
 /* Colores según el estado */
-.status-Presupuestado { background-color: #f1c40f; color: #000; }
-.status-Seña { background-color: #e67e22; color: #fff; } /* Para "Seña pagada" */
-.status-Confirmado { background-color: #27ae60; color: #fff; }
-.status-Realizado { background-color: #2980b9; color: #fff; }
-.status-Cancelado { background-color: #c0392b; color: #fff; }
+.status-Presupuestado {
+  background-color: #f1c40f;
+  color: #000;
+}
+
+.status-Seña {
+  background-color: #e67e22;
+  color: #fff;
+}
+
+/* Para "Seña pagada" */
+.status-Confirmado {
+  background-color: #27ae60;
+  color: #fff;
+}
+
+.status-Realizado {
+  background-color: #2980b9;
+  color: #fff;
+}
+
+.status-Cancelado {
+  background-color: #c0392b;
+  color: #fff;
+}
 
 /* Mejora en la tarjeta */
 .card {
-  border-left: 8px solid #ccc; /* Borde lateral por defecto */
+  border-left: 8px solid #ccc;
+  /* Borde lateral por defecto */
 }
 
 /* Borde lateral de color según estado */
-.card[data-status="Presupuestado"] { border-left-color: #f1c40f; }
-.card[data-status="Seña pagada"] { border-left-color: #e67e22; }
-.card[data-status="Confirmado"] { border-left-color: #27ae60; }
-.card[data-status="Realizado"] { border-left-color: #2980b9; }
-.card[data-status="Cancelado"] { border-left-color: #c0392b; }
+.card[data-status="Presupuestado"] {
+  border-left-color: #f1c40f;
+}
+
+.card[data-status="Seña pagada"] {
+  border-left-color: #e67e22;
+}
+
+.card[data-status="Confirmado"] {
+  border-left-color: #27ae60;
+}
+
+.card[data-status="Realizado"] {
+  border-left-color: #2980b9;
+}
+
+.card[data-status="Cancelado"] {
+  border-left-color: #c0392b;
+}
 
 .deleteBtn {
   background: #ff4757;
@@ -89,6 +248,7 @@ background:#666;
 .deleteBtn:hover {
   background: #ff6b81;
 }
+
 .filter-bar {
   display: flex;
   justify-content: space-between;
@@ -98,13 +258,14 @@ background:#666;
 }
 
 #calendar {
-  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
   border: 1px solid #ddd;
 }
 
 /* Hacer que el calendario se vea bien en modo oscuro */
 body.dark .fc {
-  color: #111; /* FullCalendar se lee mejor con fondo claro, mantenemos el interior blanco */
+  color: #111;
+  /* FullCalendar se lee mejor con fondo claro, mantenemos el interior blanco */
 }
 
 /* Resaltado de tarjeta seleccionada */
@@ -119,10 +280,12 @@ body.dark .fc {
 
 .card:hover {
   transform: scale(1.02);
-  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
+
 /* Ajustes para móviles */
 @media (max-width: 600px) {
+
   /* Reducir tamaño de títulos del calendario */
   .fc .fc-toolbar-title {
     font-size: 1rem !important;
@@ -146,11 +309,11 @@ body.dark .fc {
 }
 
 #toggleStatsBtn {
-    width: 100%;
-    padding: 10px;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    margin-bottom: 10px;
-    font-weight: bold;
+  width: 100%;
+  padding: 10px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  margin-bottom: 10px;
+  font-weight: bold;
 }
