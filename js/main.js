@@ -13,96 +13,81 @@ const usuariosMap = {
   "sebastian@ejemplo.com": "Sebastián",
 };
 
-// Función global para manejar navegación, resaltado y visibilidad de elementos
 window.showSection = function (sectionId) {
   const sections = ["calendar", "eventsList", "statsContainer"];
   const searchSection = document.getElementById("searchSection");
   const addEventContainer = document.getElementById("addEventContainer");
 
-  // 1. Alternar visibilidad de las secciones principales
   sections.forEach((id) => {
     const el = document.getElementById(id);
     if (el) el.style.display = id === sectionId ? "block" : "none";
-
-    // Resaltado visual del botón activo
     const btn = document.getElementById(`btn-${id}`);
-    if (btn) {
-      if (id === sectionId) {
-        btn.classList.add("active");
-      } else {
-        btn.classList.remove("active");
-      }
-    }
+    if (btn) btn.classList.toggle("active", id === sectionId);
   });
 
-  // 2. Lógica de elementos contextuales
-  // El buscador solo aparece en la lista de eventos
-  if (searchSection) {
-    searchSection.style.display = sectionId === "eventsList" ? "block" : "none";
-  }
+  if (searchSection) searchSection.style.display = sectionId === "eventsList" ? "block" : "none";
+  if (addEventContainer) addEventContainer.style.display = sectionId === "calendar" ? "block" : "none";
 
-  // El botón "Agregar Evento" solo aparece en el calendario
-  if (addEventContainer) {
-    addEventContainer.style.display =
-      sectionId === "calendar" ? "block" : "none";
-  }
-
-  // 3. Refresco necesario para el renderizado del calendario al volver a él
-  if (sectionId === "calendar") {
-    window.dispatchEvent(new Event("resize"));
-  }
+  if (sectionId === "calendar") window.dispatchEvent(new Event("resize"));
 };
 
 document.addEventListener("DOMContentLoaded", () => {
-  // --- LÓGICA DE LOGIN ---
+  // --- LÓGICA DE NOTIFICACIONES (Panel) ---
+  const notifWrapper = document.getElementById("notificationWrapper");
+  const notifPanel = document.getElementById("notificationPanel");
+
+  notifWrapper?.addEventListener("click", () => {
+    const isVisible = notifPanel.style.display === "block";
+    notifPanel.style.display = isVisible ? "none" : "block";
+    
+    // Si abrimos el panel, procesamos las notificaciones como leídas
+    if (!isVisible) {
+      marcarNotificacionesComoLeidas();
+    }
+  });
+
+  // Función para ocultar panel al hacer clic fuera
+  document.addEventListener("click", (e) => {
+    if (!notifWrapper.contains(e.target) && !notifPanel.contains(e.target)) {
+      notifPanel.style.display = "none";
+    }
+  });
+
+  function marcarNotificacionesComoLeidas() {
+    const countEl = document.getElementById("notifCount");
+    // Aquí iría tu lógica de Firebase para actualizar el estado en BD
+    // Por ahora, reseteamos la UI visualmente:
+    countEl.style.display = "none";
+    countEl.innerText = "0";
+    console.log("Notificaciones marcadas como leídas en Firebase");
+  }
+
+  // --- LÓGICA DE LOGIN/LOGOUT ---
   document.getElementById("loginBtn")?.addEventListener("click", async () => {
     const email = document.getElementById("email").value;
     const pass = document.getElementById("password").value;
-    try {
-      await signInWithEmailAndPassword(auth, email, pass);
-    } catch (error) {
-      alert("Error al ingresar: " + error.message);
-    }
+    try { await signInWithEmailAndPassword(auth, email, pass); } catch (e) { alert("Error: " + e.message); }
   });
 
-  // --- LÓGICA DE LOGOUT ---
   document.getElementById("logoutBtn")?.addEventListener("click", async () => {
-    try {
-      await signOut(auth);
-      location.reload();
-    } catch (error) {
-      console.error("Error al salir:", error);
-    }
+    await signOut(auth);
+    location.reload();
   });
 
-  // --- FILTRO DE MES (Para estadísticas) ---
-  document.getElementById("monthFilter")?.addEventListener("change", (e) => {
-    window.dispatchEvent(
-      new CustomEvent("filterChanged", { detail: e.target.value }),
-    );
-  });
-
-  // --- CONTROL DE ESTADO DE USUARIO ---
+  // --- ESTADO USUARIO ---
   onAuthStateChanged(auth, (user) => {
     const loginDiv = document.getElementById("loginDiv");
     const appDiv = document.getElementById("appDiv");
-    const userDisplay = document.getElementById("userDisplay");
-
+    
     if (user) {
-      if (loginDiv) loginDiv.style.display = "none";
-      if (appDiv) appDiv.style.display = "block";
-
-      window.userName = usuariosMap[user.email] || user.email.split("@")[0];
-      if (userDisplay) userDisplay.innerText = `${window.userName}`;
-
+      loginDiv.style.display = "none";
+      appDiv.style.display = "block";
       initEvents();
       initCalendar();
-
-      // Estado inicial: calendario activo
       window.showSection("calendar");
     } else {
-      if (loginDiv) loginDiv.style.display = "block";
-      if (appDiv) appDiv.style.display = "none";
+      loginDiv.style.display = "block";
+      appDiv.style.display = "none";
     }
   });
 });

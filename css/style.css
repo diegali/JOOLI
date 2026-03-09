@@ -403,3 +403,18 @@ body.dark .fc {
 .nav-btn:hover:not(.active) {
   background: #fdf5d6;
 }
+
+#notificationPanel {
+  transition: opacity 0.3s ease;
+}
+
+#notifList li {
+  padding: 10px;
+  border-bottom: 1px solid #f0f0f0;
+  font-size: 0.9em;
+  color: #555;
+}
+
+#notifList li:hover {
+  background: #f9f9f9;
+}
