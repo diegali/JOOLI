@@ -1,4 +1,4 @@
-import { db } from "./auth.js";
+import { db, auth } from "./auth.js";
 import {
   collection,
   onSnapshot,
@@ -7,51 +7,32 @@ import {
   addDoc,
   updateDoc,
   doc,
+  serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 let editingId = null;
 window.allEventsData = [];
-let unreadNotifications = [];
 
-// --- LÓGICA DE NOTIFICACIONES ---
-function updateNotificationUI() {
-  const countEl = document.getElementById("notifCount");
-  const panel = document.getElementById("notificationPanel");
-  if (!countEl || !panel) return;
-
-  if (unreadNotifications.length > 0) {
-    countEl.innerText = unreadNotifications.length;
-    countEl.style.display = "block";
-  } else {
-    countEl.style.display = "none";
-    panel.style.display = "none";
-  }
-
-  const list = panel.querySelector("ul");
-  list.innerHTML = unreadNotifications.map((n) => `<li>${n}</li>`).join("");
+// Auxiliar para obtener el nombre del usuario actual
+function getCurrentUserName() {
+  const email = auth.currentUser?.email;
+  const usuariosMap = {
+    "almos2712@hotmail.com": "Laura",
+    "mariano@a.com": "Mariano",
+    "seba@a.com": "Sebastián",
+  };
+  return usuariosMap[email] || email || "Usuario";
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-  if (!document.getElementById("notificationPanel")) {
-    const panel = document.createElement("div");
-    panel.id = "notificationPanel";
-    panel.innerHTML = "<strong>Novedades</strong><ul></ul>";
-    document.body.appendChild(panel);
-  }
-
-  const bell = document.getElementById("notificationWrapper");
-  const panel = document.getElementById("notificationPanel");
-
-  if (bell) {
-    bell.addEventListener("click", () => {
-      panel.style.display = panel.style.display === "block" ? "none" : "block";
-      if (panel.style.display === "none") {
-        unreadNotifications = [];
-        updateNotificationUI();
-      }
-    });
-  }
-});
+// Función para formatear fecha a dd/mm/aa (formato corto solicitado)
+function formatDateShort(dateStr) {
+  if (!dateStr) return "";
+  const d = new Date(dateStr + "T00:00:00");
+  const dd = String(d.getDate()).padStart(2, '0');
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const aa = String(d.getFullYear()).slice(-2);
+  return `${dd}/${mm}/${aa}`;
+}
 
 export function resetForm() {
   editingId = null;
@@ -63,25 +44,24 @@ export function resetForm() {
     });
   }
   document.getElementById("formTitle").innerText = "Nuevo Evento";
-  document.getElementById("updateBtn").style.display = "none";
-  document.getElementById("addBtn").style.display = "inline-block";
+  const updateBtn = document.getElementById("updateBtn");
+  const addBtn = document.getElementById("addBtn");
+  if (updateBtn) updateBtn.style.display = "none";
+  if (addBtn) addBtn.style.display = "inline-block";
 }
 
 export function initEvents() {
-  document
-    .getElementById("cancelFormBtn")
-    ?.addEventListener("click", resetForm);
+  document.getElementById("cancelFormBtn")?.addEventListener("click", resetForm);
   document.getElementById("addBtn")?.addEventListener("click", saveEvent);
-  document
-    .getElementById("updateBtn")
-    ?.addEventListener("click", updateExistingEvent);
+  document.getElementById("updateBtn")?.addEventListener("click", updateExistingEvent);
 
   document.getElementById("showFormBtn")?.addEventListener("click", () => {
     resetForm();
-    document.getElementById("eventFormContainer").style.display = "block";
+    const form = document.getElementById("eventFormContainer");
+    if (form) form.style.display = "block";
   });
 
-  document.getElementById("eventsList").addEventListener("click", (e) => {
+  document.getElementById("eventsList")?.addEventListener("click", (e) => {
     const card = e.target.closest(".card");
     if (card) {
       const id = card.dataset.id;
@@ -96,9 +76,21 @@ export function initEvents() {
 
 async function saveEvent() {
   const eventData = getFormData();
-  eventData.ultimoCambioPor = window.userName;
+  const userName = getCurrentUserName();
+  const userEmail = auth.currentUser?.email;
+  eventData.ultimoCambioPor = userName;
+
   try {
     await addDoc(collection(db, "events"), eventData);
+
+    // Crear notificación con fecha corta y creadorEmail
+    await addDoc(collection(db, "notificaciones"), {
+      mensaje: `${userName} creó el evento "${eventData.client}" del ${formatDateShort(eventData.date)}`,
+      leida: false,
+      creadoPorEmail: userEmail, // Para filtrar en el main.js
+      fecha: serverTimestamp()
+    });
+
     resetForm();
   } catch (error) {
     console.error("Error al guardar:", error);
@@ -108,9 +100,21 @@ async function saveEvent() {
 async function updateExistingEvent() {
   if (!editingId) return;
   const eventData = getFormData();
-  eventData.ultimoCambioPor = window.userName;
+  const userName = getCurrentUserName();
+  const userEmail = auth.currentUser?.email;
+  eventData.ultimoCambioPor = userName;
+
   try {
     await updateDoc(doc(db, "events", editingId), eventData);
+
+    // Crear notificación de edición con fecha corta y creadorEmail
+    await addDoc(collection(db, "notificaciones"), {
+      mensaje: `${userName} modificó el evento "${eventData.client}" del ${formatDateShort(eventData.date)}`,
+      leida: false,
+      creadoPorEmail: userEmail, // Para filtrar en el main.js
+      fecha: serverTimestamp()
+    });
+
     resetForm();
   } catch (error) {
     console.error("Error al actualizar:", error);
@@ -137,24 +141,6 @@ function getFormData() {
 function loadEvents() {
   const q = query(collection(db, "events"), orderBy("date"));
   onSnapshot(q, (snap) => {
-    snap.docChanges().forEach((change) => {
-      if (!snap.metadata.hasPendingWrites && change.type !== "removed") {
-        const ev = change.doc.data();
-        if (ev.ultimoCambioPor !== window.userName) {
-          const autor = ev.ultimoCambioPor || "Alguien";
-          // Formato solicitado:
-          // Nuevo: "Nombre" creó el evento "Cliente" para el día "Fecha"
-          // Editado: "Nombre" modificó el evento "Cliente" para el día "Fecha"
-          const accion =
-            change.type === "added" ? "creó el evento" : "modificó el evento";
-          const mensaje = `${autor} ${accion} "${ev.client}" para el día ${ev.date}.`;
-
-          unreadNotifications.push(mensaje);
-          updateNotificationUI();
-        }
-      }
-    });
-
     window.allEventsData = [];
     snap.forEach((d) => {
       window.allEventsData.push({ ...d.data(), id: d.id });
@@ -165,33 +151,22 @@ function loadEvents() {
 
 export function fillFormForEdit(e, id) {
   editingId = id;
-  const fields = [
-    "date",
-    "type",
-    "client",
-    "cuit",
-    "place",
-    "guests",
-    "total",
-    "deposit",
-    "status",
-    "invoiceNumber",
-    "notes",
-  ];
+  const fields = ["date", "type", "client", "cuit", "place", "guests", "total", "deposit", "status", "invoiceNumber", "notes"];
   fields.forEach((f) => {
-    if (document.getElementById(f))
-      document.getElementById(f).value = e[f] || "";
+    const el = document.getElementById(f);
+    if (el) el.value = e[f] || "";
   });
-  if (document.getElementById("paid"))
-    document.getElementById("paid").value = e.paid ? "true" : "false";
+  const paidEl = document.getElementById("paid");
+  if (paidEl) paidEl.value = e.paid ? "true" : "false";
 
   document.getElementById("formTitle").innerText = "Editando Evento";
   document.getElementById("updateBtn").style.display = "inline-block";
   document.getElementById("addBtn").style.display = "none";
-  document.getElementById("eventFormContainer").style.display = "block";
-  document
-    .getElementById("eventFormContainer")
-    .scrollIntoView({ behavior: "smooth" });
+  const form = document.getElementById("eventFormContainer");
+  if (form) {
+    form.style.display = "block";
+    form.scrollIntoView({ behavior: "smooth" });
+  }
 }
 
 function initSearch() {
@@ -200,9 +175,7 @@ function initSearch() {
   searchInput.addEventListener("input", (e) => {
     const term = e.target.value.toLowerCase();
     document.querySelectorAll(".card").forEach((card) => {
-      card.style.display = card.innerText.toLowerCase().includes(term)
-        ? ""
-        : "none";
+      card.style.display = card.innerText.toLowerCase().includes(term) ? "" : "none";
     });
   });
 }
@@ -211,9 +184,7 @@ function updateClientDatalist(events) {
   const datalist = document.getElementById("clientList");
   if (!datalist) return;
   const clients = [...new Set(events.map((e) => e.client))].sort();
-  datalist.innerHTML = clients
-    .map((name) => `<option value="${name}">`)
-    .join("");
+  datalist.innerHTML = clients.map((name) => `<option value="${name}">`).join("");
 }
 
 function updateStats(events) {
@@ -236,6 +207,7 @@ export function renderFilteredEvents(events) {
   const today = new Date().toISOString().split("T")[0];
   const upcomingGroups = {};
   const pastGroups = {};
+
   events.forEach((e) => {
     const monthKey = getMonthLabel(e.date);
     const isPast = e.date < today;
@@ -247,6 +219,7 @@ export function renderFilteredEvents(events) {
       upcomingGroups[monthKey].push(createCard(e, e.id));
     }
   });
+
   updateStats(events);
   updateClientDatalist(events);
   renderGroup(upcomingGroups, "📅 Próximos Eventos", "#27ae60");
@@ -264,13 +237,7 @@ function renderGroup(groups, sectionTitle, color) {
 }
 
 function createCard(e, id) {
-  const colors = {
-    Presupuestado: "#f1c40f",
-    "Seña pagada": "#e67e22",
-    Confirmado: "#27ae60",
-    Realizado: "#2980b9",
-    Cancelado: "#c0392b",
-  };
+  const colors = { Presupuestado: "#f1c40f", "Seña pagada": "#e67e22", Confirmado: "#27ae60", Realizado: "#2980b9", Cancelado: "#c0392b" };
   const statusStyle = `background:${colors[e.status] || "#666"}; color:white; padding:4px 10px; border-radius:12px; font-size:0.75em; font-weight:bold; display:inline-block; min-width:80px; text-align:center;`;
   return `
     <div class="card" data-id="${id}" style="cursor:pointer; border:1px solid #ddd; padding:12px; border-radius:8px; margin-bottom:10px; background:white;">
@@ -291,20 +258,7 @@ function createCard(e, id) {
 
 function getMonthLabel(dateStr) {
   const d = new Date(dateStr + "T00:00:00");
-  const months = [
-    "Enero",
-    "Febrero",
-    "Marzo",
-    "Abril",
-    "Mayo",
-    "Junio",
-    "Julio",
-    "Agosto",
-    "Septiembre",
-    "Octubre",
-    "Noviembre",
-    "Diciembre",
-  ];
+  const months = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
   return `${months[d.getMonth()]} ${d.getFullYear()}`;
 }
 
@@ -320,8 +274,6 @@ window.addEventListener("filterChanged", (e) => {
     renderFilteredEvents(window.allEventsData);
     return;
   }
-  const filtered = window.allEventsData.filter((ev) =>
-    ev.date.startsWith(selectedMonth),
-  );
+  const filtered = window.allEventsData.filter((ev) => ev.date.startsWith(selectedMonth));
   renderFilteredEvents(filtered);
 });

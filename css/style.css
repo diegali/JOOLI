@@ -25,16 +25,19 @@ header {
 
 .logo-container,
 .header-right {
-  flex: 1; /* Ambos ocupan el mismo espacio */
+  flex: 1;
+  /* Ambos ocupan el mismo espacio */
 }
 
 .header-right {
   display: flex;
-  justify-content: flex-end; /* Alinea el botón a la derecha */
+  justify-content: flex-end;
+  /* Alinea el botón a la derecha */
 }
 
 .header-title {
-  flex: 2; /* El título ocupa el centro */
+  flex: 2;
+  /* El título ocupa el centro */
   text-align: center;
   font-size: 1rem;
   font-weight: 700;
@@ -135,26 +138,35 @@ textarea {
 
 /* Estilo para el logo */
 .logo {
-  height: 70px; /* Tamaño que definimos */
+  height: 70px;
+  /* Tamaño que definimos */
   width: auto;
-  vertical-align: middle; /* Alinea el logo con el texto */
+  vertical-align: middle;
+  /* Alinea el logo con el texto */
 }
 
 /* Estilo para el nuevo título resaltado */
 .header-title {
-  font-size: 1.2rem; /* Tamaño más grande */
-  font-weight: 600; /* Muy grueso (resaltado) */
-  color: #d4af37; /* Color dorado (o el que prefieras) */
-  margin-left: 12px; /* Espacio entre el logo y el texto */
-  letter-spacing: 0.5px; /* Un toque de elegancia */
+  font-size: 1.2rem;
+  /* Tamaño más grande */
+  font-weight: 600;
+  /* Muy grueso (resaltado) */
+  color: #d4af37;
+  /* Color dorado (o el que prefieras) */
+  margin-left: 12px;
+  /* Espacio entre el logo y el texto */
+  letter-spacing: 0.5px;
+  /* Un toque de elegancia */
   text-align: center;
-  text-transform: uppercase; /* Opcional: todo en mayúsculas */
+  text-transform: uppercase;
+  /* Opcional: todo en mayúsculas */
 }
 
 /* Ajuste para que todo el header esté bien alineado */
 header {
   display: flex;
-  align-items: center; /* Asegura que todo quede centrado verticalmente */
+  align-items: center;
+  /* Asegura que todo quede centrado verticalmente */
   padding: 10px;
   border-bottom: 2px solid #f0f0f0;
 }
@@ -188,17 +200,18 @@ body.dark .card.selected {
   margin-top: 10px;
 }
 
-@media (max-width: 700px) {
-  .form-grid {
-    grid-template-columns: 1fr;
+@media (max-width: 600px) {
+  .fc-event-title {
+    font-size: 0.7em !important;
+    font-weight: bold;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
-  .stats {
-    grid-template-columns: 1fr;
-  }
-
-  #calendar {
-    height: auto;
+  .fc-daygrid-event {
+    margin-top: 1px !important;
+    padding: 1px !important;
   }
 }
 
@@ -327,6 +340,7 @@ body.dark .fc {
 
 /* Ajustes para móviles */
 @media (max-width: 600px) {
+
   /* Reducir tamaño de títulos del calendario */
   .fc .fc-toolbar-title {
     font-size: 1rem !important;
@@ -358,6 +372,7 @@ body.dark .fc {
   margin-bottom: 10px;
   font-weight: bold;
 }
+
 #notificationPanel {
   position: absolute;
   top: 45px;
@@ -367,15 +382,18 @@ body.dark .fc {
   border: 1px solid #ddd;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  display: none; /* Oculto por defecto */
+  display: none;
+  /* Oculto por defecto */
   z-index: 1000;
   padding: 10px;
 }
+
 #notificationPanel ul {
   list-style: none;
   padding: 0;
   margin: 0;
 }
+
 #notificationPanel li {
   padding: 8px;
   border-bottom: 1px solid #eee;
@@ -394,10 +412,13 @@ body.dark .fc {
 }
 
 .nav-btn.active {
-  background: #b8962e; /* Un tono de dorado más oscuro y profundo */
-  color: #ffffff; /* Blanco puro para máxima legibilidad */
+  background: #b8962e;
+  /* Un tono de dorado más oscuro y profundo */
+  color: #ffffff;
+  /* Blanco puro para máxima legibilidad */
   border-color: #947725;
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2); /* Efecto de profundidad */
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+  /* Efecto de profundidad */
 }
 
 .nav-btn:hover:not(.active) {
