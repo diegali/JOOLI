@@ -340,7 +340,6 @@ body.dark .fc {
 
 /* Ajustes para móviles */
 @media (max-width: 600px) {
-
   /* Reducir tamaño de títulos del calendario */
   .fc .fc-toolbar-title {
     font-size: 1rem !important;
@@ -438,4 +437,10 @@ body.dark .fc {
 
 #notifList li:hover {
   background: #f9f9f9;
+}
+
+.nav-btn,
+#btn-staff {
+  font-size: 0.85em !important; /* Ajusta el tamaño de fuente para dispositivos móviles */
+  padding: 10px 8px !important;
 }

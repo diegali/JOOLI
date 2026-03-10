@@ -1,5 +1,6 @@
 import { initEvents } from "./events.js";
 import { initCalendar } from "./calendar.js";
+import { guardarMozo } from "./staff.js";
 import { auth, db } from "./auth.js";
 import {
   onAuthStateChanged,
@@ -35,12 +36,15 @@ window.showSection = function (sectionId) {
     if (btn) btn.classList.toggle("active", id === sectionId);
   });
 
-  if (searchSection) searchSection.style.display = sectionId === "eventsList" ? "block" : "none";
-  if (addEventContainer) addEventContainer.style.display = sectionId === "calendar" ? "block" : "none";
+  if (searchSection)
+    searchSection.style.display = sectionId === "eventsList" ? "block" : "none";
+  if (addEventContainer)
+    addEventContainer.style.display =
+      sectionId === "calendar" ? "block" : "none";
 
   if (sectionId === "calendar") {
     window.dispatchEvent(new Event("resize"));
-    if (typeof refreshCalendar === 'function') refreshCalendar();
+    if (typeof refreshCalendar === "function") refreshCalendar();
   }
 };
 
@@ -62,7 +66,9 @@ function updateUserNameDisplay() {
 
 // --- INICIALIZACIÓN ---
 document.addEventListener("DOMContentLoaded", () => {
-  const notifSound = new Audio("https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3");
+  const notifSound = new Audio(
+    "https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3",
+  );
   let inicializado = false;
   const notifWrapper = document.getElementById("notificationWrapper");
   const notifPanel = document.getElementById("notificationPanel");
@@ -70,7 +76,10 @@ document.addEventListener("DOMContentLoaded", () => {
   function formatarHora(timestamp) {
     if (!timestamp) return "";
     const date = timestamp.toDate();
-    return date.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+    return date.toLocaleTimeString("es-AR", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
   }
 
   let cantidadAnterior = 0;
@@ -78,14 +87,21 @@ document.addEventListener("DOMContentLoaded", () => {
   function iniciarEscuchadorNotificaciones() {
     const userEmail = auth.currentUser?.email;
     const countEl = document.getElementById("notifCount");
-    const q = query(collection(db, "notificaciones"), where("leida", "==", false));
+    const q = query(
+      collection(db, "notificaciones"),
+      where("leida", "==", false),
+    );
 
     onSnapshot(q, (snapshot) => {
-      const filtradas = snapshot.docs.filter(doc => doc.data().creadoPorEmail !== userEmail);
+      const filtradas = snapshot.docs.filter(
+        (doc) => doc.data().creadoPorEmail !== userEmail,
+      );
       const cantidadActual = filtradas.length;
 
       if (inicializado && cantidadActual > cantidadAnterior) {
-        notifSound.play().catch(e => console.log("Audio bloqueado por navegador."));
+        notifSound
+          .play()
+          .catch((e) => console.log("Audio bloqueado por navegador."));
       }
 
       if (countEl) {
@@ -107,14 +123,22 @@ document.addEventListener("DOMContentLoaded", () => {
   async function marcarNotificacionesComoLeidas() {
     const userEmail = auth.currentUser?.email;
     try {
-      const q = query(collection(db, "notificaciones"), where("leida", "==", false));
+      const q = query(
+        collection(db, "notificaciones"),
+        where("leida", "==", false),
+      );
       const snapshot = await getDocs(q);
-      const paraMostrar = snapshot.docs.filter(d => d.data().creadoPorEmail !== userEmail);
+      const paraMostrar = snapshot.docs.filter(
+        (d) => d.data().creadoPorEmail !== userEmail,
+      );
 
       const notifList = document.getElementById("notifList");
       if (notifList) {
-        notifList.innerHTML = paraMostrar.length === 0 ? "<li style='color:#888; text-align:center;'>No hay novedades</li>" : "";
-        paraMostrar.forEach(d => {
+        notifList.innerHTML =
+          paraMostrar.length === 0
+            ? "<li style='color:#888; text-align:center;'>No hay novedades</li>"
+            : "";
+        paraMostrar.forEach((d) => {
           const data = d.data();
           const li = document.createElement("li");
           li.innerHTML = `<div style="display:flex; justify-content:space-between; align-items:center; width:100%;"><span>${data.mensaje}</span><small style="color:#d4af37; margin-left:10px; font-weight:bold;">${formatarHora(data.fecha)}</small></div>`;
@@ -122,16 +146,24 @@ document.addEventListener("DOMContentLoaded", () => {
         });
       }
 
-      const updatePromises = snapshot.docs.map(d => updateDoc(doc(db, "notificaciones", d.id), { leida: true }));
+      const updatePromises = snapshot.docs.map((d) =>
+        updateDoc(doc(db, "notificaciones", d.id), { leida: true }),
+      );
       await Promise.all(updatePromises);
-    } catch (e) { console.error("Error:", e); }
+    } catch (e) {
+      console.error("Error:", e);
+    }
   }
 
   document.getElementById("loginBtn")?.addEventListener("click", async () => {
     const email = document.getElementById("email")?.value;
     const pass = document.getElementById("password")?.value;
     if (email && pass) {
-      try { await signInWithEmailAndPassword(auth, email, pass); } catch (e) { alert("Error: " + e.message); }
+      try {
+        await signInWithEmailAndPassword(auth, email, pass);
+      } catch (e) {
+        alert("Error: " + e.message);
+      }
     }
   });
 

@@ -1,30 +1,36 @@
 <!doctype html>
 <html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>JOOLI Agenda</title>
 
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>JOOLI Agenda</title>
-  <link rel="stylesheet" href="./css/style.css" />
-  <link rel="manifest" href="manifest.json" />
-  <meta name="theme-color" content="#d4af37" />
-  <script type="module" src="./js/main.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/locales-all.global.min.js"></script>
-</head>
+    <link rel="stylesheet" href="./css/style.css?v=1.1" />
+    <script type="module" src="./js/main.js?v=1.1"></script>
 
-<body>
-  <header>
-    <div class="logo-container">
-      <img src="./logoB.png" class="logo" alt="Logo" />
-    </div>
+    <link rel="manifest" href="manifest.json" />
+    <meta name="theme-color" content="#d4af37" />
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/locales-all.global.min.js"></script>
+  </head>
 
-    <span class="header-title">Agenda de Eventos</span>
+  <body>
+    <header>
+      <div class="logo-container">
+        <img src="./logoB.png" class="logo" alt="Logo" />
+      </div>
 
-    <div class="header-right">
-      <div id="notificationWrapper" style="position: relative; cursor: pointer; margin-right: 15px">
-        <span>🔔</span>
-        <span id="notifCount" style="
+      <span class="header-title">Agenda de Eventos</span>
+
+      <div class="header-right">
+        <div
+          id="notificationWrapper"
+          style="position: relative; cursor: pointer; margin-right: 15px"
+        >
+          <span>🔔</span>
+          <span
+            id="notifCount"
+            style="
               position: absolute;
               top: -5px;
               right: -5px;
@@ -34,227 +40,405 @@
               padding: 2px 6px;
               font-size: 10px;
               display: none;
-            ">0</span>
+            "
+            >0</span
+          >
+        </div>
+        <div
+          id="notificationPanel"
+          style="
+            display: none;
+            position: absolute;
+            top: 50px;
+            right: 20px;
+            width: 300px;
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            padding: 15px;
+            z-index: 1000;
+          "
+        >
+          <h4
+            style="
+              margin: 0 0 10px 0;
+              color: #333;
+              border-bottom: 1px solid #eee;
+              padding-bottom: 5px;
+            "
+          >
+            Notificaciones
+          </h4>
+          <ul
+            id="notifList"
+            style="
+              list-style: none;
+              padding: 0;
+              margin: 0;
+              max-height: 300px;
+              overflow-y: auto;
+            "
+          ></ul>
+        </div>
+        <div
+          class="user-info-container"
+          style="text-align: center; margin-bottom: 0px"
+        >
+          <small
+            id="userNameDisplay"
+            style="
+              color: white;
+              font-size: 0.9em;
+              font-weight: 700;
+              letter-spacing: 0.5px;
+              display: block;
+              margin-bottom: 12px;
+            "
+          ></small>
+          <button
+            id="logoutBtn"
+            class="btn-logout"
+            style="
+              background: #e74c3c;
+              color: white;
+              border: none;
+              cursor: pointer;
+            "
+          >
+            Salir
+          </button>
+        </div>
       </div>
-      <div id="notificationPanel"
-        style="display: none; position: absolute; top: 50px; right: 20px; width: 300px; background: #fff; border: 1px solid #ddd; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); padding: 15px; z-index: 1000;">
-        <h4 style="margin: 0 0 10px 0; color: #333; border-bottom: 1px solid #eee; padding-bottom: 5px;">Notificaciones
-        </h4>
-        <ul id="notifList" style="list-style: none; padding: 0; margin: 0; max-height: 300px; overflow-y: auto;">
-        </ul>
+    </header>
+
+    <div class="container" id="loginDiv">
+      <div style="text-align: center; margin-bottom: 20px">
+        <h3 style="color: var(--gold)">Bienvenido a JOOLI</h3>
+        <p>Ingresa tus credenciales para continuar</p>
       </div>
-      <div class="user-info-container" style="text-align: center; margin-bottom: 0px;">
-        <small id="userNameDisplay" style="
-    color: white; 
-    font-size: 0.9em; 
-    font-weight: 700; 
-    letter-spacing: 0.5px; 
-    display: block; 
-    margin-bottom: 12px;
-">
-        </small>
-        <button id="logoutBtn" class="btn-logout" style="
-            background: #e74c3c;
-            color: white;
-            border: none;
-          
-            cursor: pointer;
-          ">Salir</button>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="email" placeholder="ejemplo@correo.com" />
       </div>
-
-
+      <div class="form-group">
+        <label>Contraseña</label>
+        <input type="password" id="password" placeholder="••••••••" />
+      </div>
+      <button id="loginBtn" style="width: 100%; margin-top: 10px">
+        Ingresar
+      </button>
     </div>
-  </header>
 
-  <div class="container" id="loginDiv">
-    <div style="text-align: center; margin-bottom: 20px">
-      <h3 style="color: var(--gold)">Bienvenido a JOOLI</h3>
-      <p>Ingresa tus credenciales para continuar</p>
-    </div>
-    <div class="form-group">
-      <label>Email</label>
-      <input type="email" id="email" placeholder="ejemplo@correo.com" />
-    </div>
-    <div class="form-group">
-      <label>Contraseña</label>
-      <input type="password" id="password" placeholder="••••••••" />
-    </div>
-    <button id="loginBtn" style="width: 100%; margin-top: 10px">
-      Ingresar
-    </button>
-  </div>
-
-  <div class="container" id="appDiv" style="display: none">
-    <nav style="
+    <div class="container" id="appDiv" style="display: none">
+      <nav
+        style="
           display: flex;
-          gap: 10px;
+          gap: 5px;
           margin-bottom: 20px;
           justify-content: center;
-        ">
-      <button id="btn-calendar" class="nav-btn active" onclick="showSection('calendar')">
-        📅 Calendario
-      </button>
-      <button id="btn-eventsList" class="nav-btn" onclick="showSection('eventsList')">
-        📜 Lista de Eventos
-      </button>
-      <button id="btn-statsContainer" class="nav-btn" onclick="showSection('statsContainer')">
-        📊 Estadísticas
-      </button>
-    </nav>
+          flex-wrap: nowrap;
+          overflow-x: auto;
+          padding-bottom: 10px;
+        "
+      >
+        <button
+          id="btn-calendar"
+          class="nav-btn active"
+          onclick="showSection('calendar')"
+        >
+          📅 Calendario
+        </button>
+        <button
+          id="btn-eventsList"
+          class="nav-btn"
+          onclick="showSection('eventsList')"
+        >
+          📜 Lista
+        </button>
+        <button
+          id="btn-statsContainer"
+          class="nav-btn"
+          onclick="showSection('statsContainer')"
+        >
+          📊 Stats
+        </button>
+        <button
+          id="btn-staff"
+          onclick="abrirModal()"
+          style="
+            padding: 10px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            white-space: nowrap;
+          "
+        >
+          👥 Staff
+        </button>
+      </nav>
 
-    <div id="searchSection" style="margin: 20px 0; display: none">
-      <input type="text" id="searchInput" placeholder="🔍 Buscar cliente..." list="clientList" style="
+      <div id="searchSection" style="margin: 20px 0; display: none">
+        <input
+          type="text"
+          id="searchInput"
+          placeholder="🔍 Buscar cliente..."
+          list="clientList"
+          style="
             width: 100%;
             padding: 12px;
             border: 1px solid #ccc;
             border-radius: 8px;
             font-size: 16px;
-          " />
-      <datalist id="clientList"></datalist>
-    </div>
+          "
+        />
+        <datalist id="clientList"></datalist>
+      </div>
 
-    <div id="statsContainer" style="
+      <div
+        id="statsContainer"
+        style="
           display: none;
           background: #f9f9f9;
           padding: 15px;
           border-radius: 10px;
           margin-bottom: 20px;
           border: 1px solid #ddd;
-        ">
-      <div style="
+        "
+      >
+        <div
+          style="
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 15px;
-          ">
-        <h3 style="margin: 0">Estadísticas del Mes</h3>
-        <div class="form-group" style="margin: 0">
-          <input type="month" id="monthFilter" style="padding: 5px; border-radius: 5px; border: 1px solid #ccc" />
+          "
+        >
+          <h3 style="margin: 0">Estadísticas del Mes</h3>
+          <input
+            type="month"
+            id="monthFilter"
+            style="padding: 5px; border-radius: 5px; border: 1px solid #ccc"
+          />
         </div>
-      </div>
-      <div class="stats" style="
+        <div
+          class="stats"
+          style="
             display: flex;
             justify-content: space-around;
             flex-wrap: wrap;
             gap: 10px;
-          ">
-        <div style="text-align: center">
-          <strong>Total:</strong><br /><span id="totalMes">0</span>
-        </div>
-        <div style="text-align: center">
-          <strong>Señas:</strong><br /><span id="senasMes">0</span>
-        </div>
-        <div style="text-align: center">
-          <strong>Saldo:</strong><br /><span id="saldoMes">0</span>
-        </div>
-        <div style="text-align: center">
-          <strong>Eventos:</strong><br /><span id="eventosMes">0</span>
+          "
+        >
+          <div style="text-align: center">
+            <strong>Total:</strong><br /><span id="totalMes">0</span>
+          </div>
+          <div style="text-align: center">
+            <strong>Señas:</strong><br /><span id="senasMes">0</span>
+          </div>
+          <div style="text-align: center">
+            <strong>Saldo:</strong><br /><span id="saldoMes">0</span>
+          </div>
+          <div style="text-align: center">
+            <strong>Eventos:</strong><br /><span id="eventosMes">0</span>
+          </div>
         </div>
       </div>
-    </div>
 
-    <div id="addEventContainer" style="text-align: center; margin-bottom: 15px">
-      <button id="showFormBtn" style="
+      <div
+        id="addEventContainer"
+        style="text-align: center; margin-bottom: 15px"
+      >
+        <button
+          id="showFormBtn"
+          style="
             background: var(--gold);
             color: #111;
             padding: 10px 25px;
             border-radius: 20px;
             cursor: pointer;
-          ">
-        + Agregar Evento
-      </button>
-    </div>
+          "
+        >
+          + Agregar Evento
+        </button>
+      </div>
 
-    <div id="calendar" style="
+      <div
+        id="calendar"
+        style="
           margin-bottom: 30px;
           background: white;
           padding: 10px;
           border-radius: 12px;
           color: #111;
-        "></div>
+        "
+      ></div>
 
-    <div id="daySummary" style="display:none;"></div>
-    <div id="eventFormContainer" style="
+      <div id="daySummary" style="display: none"></div>
+
+      <div
+        id="eventFormContainer"
+        style="
           display: none;
           background: rgba(0, 0, 0, 0.05);
           padding: 20px;
           border-radius: 15px;
           margin-bottom: 20px;
-        ">
-      <h3 id="formTitle">Nuevo Evento</h3>
-      <div class="form-grid">
-        <div class="form-group">
-          <label>Fecha</label><input type="date" id="date" />
+        "
+      >
+        <h3 id="formTitle">Nuevo Evento</h3>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Fecha</label><input type="date" id="date" />
+          </div>
+          <div class="form-group">
+            <label>Tipo</label>
+            <select id="type">
+              <option>Catering Completo</option>
+              <option>Solo Finger Food</option>
+              <option>Mesa Dulce</option>
+              <option>Personal de Servicio</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Cliente</label><input type="text" id="client" />
+          </div>
+          <div class="form-group">
+            <label>CUIT/DNI</label><input type="text" id="cuit" />
+          </div>
+          <div class="form-group">
+            <label for="invoiceType">Tipo de Factura:</label>
+            <select id="invoiceType" class="form-control">
+              <option value="B/C">Factura B/C</option>
+              <option value="A">Factura A</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Lugar</label><input type="text" id="place" />
+          </div>
+          <div class="form-group">
+            <label>Invitados</label><input type="number" id="guests" />
+          </div>
+          <div class="form-group">
+            <label>Total $</label><input type="number" id="total" />
+          </div>
+          <div class="form-group">
+            <label>Seña $</label><input type="number" id="deposit" />
+          </div>
+          <div class="form-group">
+            <label>Estado</label>
+            <select id="status">
+              <option>Presupuestado</option>
+              <option>Seña pagada</option>
+              <option>Confirmado</option>
+              <option>Realizado</option>
+              <option>Cancelado</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>¿Pagado?</label>
+            <select id="paid">
+              <option value="false">No</option>
+              <option value="true">Sí</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Nro Factura</label><input type="text" id="invoiceNumber" />
+          </div>
         </div>
         <div class="form-group">
-          <label>Tipo</label>
-          <select id="type">
-            <option>Catering Completo</option>
-            <option>Solo Finger Food</option>
-            <option>Mesa Dulce</option>
-            <option>Personal de Servicio</option>
-          </select>
+          <label>Notas</label><textarea id="notes"></textarea>
         </div>
-        <div class="form-group">
-          <label>Cliente</label><input type="text" id="client" />
-        </div>
-        <div class="form-group">
-          <label>CUIT/DNI</label><input type="text" id="cuit" />
-        </div>
-        <div class="form-group">
-          <label for="invoiceType">Tipo de Factura:</label>
-          <select id="invoiceType" class="form-control">
-            <option value="B/C">Factura B/C</option>
-            <option value="A">Factura A</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Lugar</label><input type="text" id="place" />
-        </div>
-        <div class="form-group">
-          <label>Invitados</label><input type="number" id="guests" />
-        </div>
-        <div class="form-group">
-          <label>Total $</label><input type="number" id="total" />
-        </div>
-        <div class="form-group">
-          <label>Seña $</label><input type="number" id="deposit" />
-        </div>
-        <div class="form-group">
-          <label>Estado</label>
-          <select id="status">
-            <option>Presupuestado</option>
-            <option>Seña pagada</option>
-            <option>Confirmado</option>
-            <option>Realizado</option>
-            <option>Cancelado</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>¿Pagado?</label>
-          <select id="paid">
-            <option value="false">No</option>
-            <option value="true">Sí</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Nro Factura</label><input type="text" id="invoiceNumber" />
+        <div style="margin-top: 10px">
+          <button id="addBtn">Guardar Evento</button>
+          <button id="updateBtn" style="display: none">
+            Actualizar Evento
+          </button>
+          <button id="cancelFormBtn" style="background: #666">Cancelar</button>
         </div>
       </div>
-      <div class="form-group">
-        <label>Notas</label><textarea id="notes"></textarea>
-      </div>
-      <div style="margin-top: 10px">
-        <button id="addBtn">Guardar Evento</button>
-        <button id="updateBtn" style="display: none">
-          Actualizar Evento
-        </button>
-        <button id="cancelFormBtn" style="background: #666">Cancelar</button>
-      </div>
+
+      <div id="eventsList" style="display: none"></div>
     </div>
 
-    <div id="eventsList" style="display: none"></div>
-  </div>
-</body>
+    <div
+      id="staffModal"
+      style="
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1000;
+        justify-content: center;
+        align-items: center;
+      "
+    >
+      <div
+        style="
+          background: white;
+          padding: 20px;
+          border-radius: 10px;
+          width: 90%;
+          max-width: 400px;
+        "
+      >
+        <h3>Gestionar Staff</h3>
+        <input
+          type="text"
+          id="mozoNombre"
+          placeholder="Nombre del mozo"
+          style="width: 100%; margin-bottom: 10px; padding: 8px"
+        />
+        <input
+          type="text"
+          id="mozoTelefono"
+          placeholder="Teléfono (ej: 5491122334455)"
+          style="width: 100%; margin-bottom: 10px; padding: 8px"
+        />
+        <button
+          onclick="guardarMozo()"
+          style="
+            width: 100%;
+            padding: 10px;
+            background: #27ae60;
+            color: white;
+            border: none;
+            border-radius: 5px;
+          "
+        >
+          Guardar
+        </button>
+        <button
+          onclick="cerrarModal()"
+          style="
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            background: #7f8c8d;
+            color: white;
+            border: none;
+            border-radius: 5px;
+          "
+        >
+          Cancelar
+        </button>
 
+        <div
+          id="listaStaff"
+          style="
+            margin-top: 15px;
+            max-height: 200px;
+            overflow-y: auto;
+            border-top: 1px solid #eee;
+            padding-top: 10px;
+          "
+        ></div>
+      </div>
+    </div>
+  </body>
 </html>
