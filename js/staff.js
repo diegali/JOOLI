@@ -236,16 +236,65 @@ export async function renderStaffSelection() {
     console.error("Error cargando staff:", e);
   }
 }
+
+function hayCambiosSinGuardarEvento(evento) {
+  const editEventId = window.editingId || "";
+
+  // Si no se está editando este evento, no bloquear
+  if (!editEventId || editEventId !== evento.id) return false;
+
+  const dateForm = document.getElementById("date")?.value || "";
+  const placeForm = document.getElementById("place")?.value || "";
+  const horaInicioForm = document.getElementById("horaInicio")?.value || "";
+  const horaFinForm = document.getElementById("horaFin")?.value || "";
+
+  return (
+    dateForm !== (evento.date || "") ||
+    placeForm !== (evento.place || "") ||
+    horaInicioForm !== (evento.horaInicio || "") ||
+    horaFinForm !== (evento.horaFin || "")
+  );
+}
+
+
 // ===============================
 // MODAL GESTIÓN DE STAFF EN EVENTO
 // ===============================
 window.abrirModalGestionStaff = async function (eventId) {
   const evento = window.allEventsData.find((e) => e.id === eventId);
-  const inputHoraPresentacion = document.getElementById("horaPresentacionEvento");
-  if (inputHoraPresentacion) {
-    inputHoraPresentacion.value = evento.horaPresentacion || "";
+  if (!evento) return;
+  if (hayCambiosSinGuardarEvento(evento)) {
+    alert("Primero presioná 'Actualizar evento' para guardar los cambios antes de gestionar el staff.");
+    return;
   }
+
+  const inputHoraPresentacion = document.getElementById("horaPresentacionEvento");
+
   if (inputHoraPresentacion) {
+    // Si no hay horaPresentacion guardada pero sí hay horaInicio, calcular 2 horas antes
+    if (!evento.horaPresentacion && evento.horaInicio) {
+      const [h, m] = evento.horaInicio.split(":").map(Number);
+      const totalMin = h * 60 + m - 120;
+      const minDia = 24 * 60;
+      const ajustado = (totalMin + minDia) % minDia;
+
+      const hh = String(Math.floor(ajustado / 60)).padStart(2, "0");
+      const mm = String(ajustado % 60).padStart(2, "0");
+      const horaCalculada = `${hh}:${mm}`;
+
+      try {
+        await updateDoc(doc(db, "events", eventId), {
+          horaPresentacion: horaCalculada,
+        });
+
+        evento.horaPresentacion = horaCalculada;
+      } catch (e) {
+        console.error("Error guardando hora de presentación calculada:", e);
+      }
+    }
+
+    inputHoraPresentacion.value = evento.horaPresentacion || "";
+
     inputHoraPresentacion.onchange = async function () {
       const nuevaHora = this.value;
 
@@ -260,7 +309,6 @@ window.abrirModalGestionStaff = async function (eventId) {
       }
     };
   }
-  if (!evento) return;
 
   const modal = document.getElementById("modalGestionStaff");
   const container = document.getElementById("listaGestionStaffContenido");
@@ -280,13 +328,15 @@ window.abrirModalGestionStaff = async function (eventId) {
   const panelSeleccion = document.getElementById("contenedorSeleccionStaff");
   const seleccionAbierta =
     panelSeleccion && panelSeleccion.style.display !== "none";
-  const qStaff = query(collection(db, "staff"), orderBy("nombre"));
-  const snapshotStaff = await getDocs(qStaff);
-  const staffYaAsignado = mensajes.map((m) => normalizarNombreStaff(m));
-  const hayStaffDisponible = snapshotStaff.docs.some((docSnap) => {
-    const data = docSnap.data();
-    return !staffYaAsignado.includes(data.nombre);
-  });
+  const totalStaffNecesario = Number(evento.staffNecesario || 0);
+
+  const totalStaffAsignado = mensajes.filter(
+    (m) => obtenerEstadoStaff(m) !== "rechazado"
+  ).length;
+
+  const staffCompleto =
+    totalStaffNecesario > 0 && totalStaffAsignado >= totalStaffNecesario;
+
   const botonAgregar = document.getElementById("btnAbrirSeleccion");
   if (botonAgregar) {
     if (seleccionAbierta) {
@@ -294,8 +344,6 @@ window.abrirModalGestionStaff = async function (eventId) {
       botonAgregar.innerText = "Cancelar";
       botonAgregar.classList.remove("completo");
     } else {
-      const staffCompleto = !hayStaffDisponible;
-
       botonAgregar.disabled = staffCompleto;
       botonAgregar.innerText = staffCompleto ? "Completo" : "+ Agregar";
 
@@ -319,15 +367,39 @@ window.abrirModalGestionStaff = async function (eventId) {
   ).length;
 
 
+  const staffNecesario = Number(evento.staffNecesario || 0);
+  const activos = confirmados + pendientes;
+  const faltan = Math.max(staffNecesario - activos, 0);
+
+  let colorEstado = "#27ae60"; // verde
+
+  if (activos === 0) {
+    colorEstado = "#c0392b"; // rojo
+  } else if (faltan > 0) {
+    colorEstado = "#f39c12"; // amarillo
+  }
+
   if (resumen) {
-    if (totalStaff === 0) {
-      resumen.innerText = "Sin staff asignado";
-    } else {
-      resumen.innerText =
+    let linea1 = "Sin staff asignado";
+
+    if (totalStaff > 0) {
+      linea1 =
         `${confirmados} confirmados · ${pendientes} pendientes` +
         (rechazados > 0 ? ` · ${rechazados} rechazados` : "");
     }
+
+    let linea2 = "";
+    if (staffNecesario > 0) {
+      linea2 = `
+        <span style="color:${colorEstado}; font-weight:600;">
+          👥 ${staffNecesario} · ✔ ${activos} · ➕ ${faltan}
+        </span>
+      `;
+    }
+
+    resumen.innerHTML = linea2 ? `${linea1}<br>${linea2}` : linea1;
   }
+
   if (mensajes.length === 0) {
     container.innerHTML =
       "<p style='text-align:center; color:#666;'>No hay staff asignado todavía.</p>";
@@ -416,6 +488,16 @@ async function togglePanelSeleccionStaff() {
   const evento = window.allEventsData.find((e) => e.id === eventId);
 
   if (!evento) return;
+
+  const totalStaffNecesario = Number(evento.staffNecesario || 0);
+  const totalStaffAsignado = (evento.mensajesEnviados || []).filter(
+    (m) => obtenerEstadoStaff(m) !== "rechazado"
+  ).length;
+
+  if (totalStaffNecesario > 0 && totalStaffAsignado >= totalStaffNecesario) {
+    alert("El staff de este evento ya está completo.");
+    return;
+  }
 
   const staffYaAsignado = (evento.mensajesEnviados || []).map((m) =>
     normalizarNombreStaff(m)
@@ -540,10 +622,12 @@ async function confirmarAsignacionStaff() {
         staffFinal.push(nuevo);
       }
     });
-    const totalStaffSistema = staffCache.length;
-    const totalStaffAsignado = staffFinal.length;
-    const staffCompleto = totalStaffSistema > 0 && totalStaffAsignado >= totalStaffSistema;
-
+    const totalStaffNecesario = Number(evento.staffNecesario || 0);
+    const totalStaffAsignado = staffFinal.filter(
+      (s) => obtenerEstadoStaff(s) !== "rechazado"
+    ).length;
+    const staffCompleto =
+      totalStaffNecesario > 0 && totalStaffAsignado >= totalStaffNecesario;
     await updateDoc(eventoRef, { mensajesEnviados: staffFinal });
 
     evento.mensajesEnviados = staffFinal;

@@ -114,6 +114,9 @@ function getFormData() {
     horaInicio: document.getElementById("horaInicio")?.value || "",
     horaFin: document.getElementById("horaFin")?.value || "",
     guests: document.getElementById("guests")?.value || "",
+    staffNecesario:
+      document.getElementById("staffNecesario")?.value ||
+      Math.ceil((document.getElementById("guests")?.value || 0) / 15),
     total: document.getElementById("total")?.value || "",
     deposit: document.getElementById("deposit")?.value || "",
     status: document.getElementById("status")?.value || "",
@@ -170,6 +173,7 @@ async function updateExistingEvent() {
       fecha: serverTimestamp(),
     });
 
+    window.editingId = "";
     resetForm();
   } catch (error) {
     console.error("Error al actualizar:", error);
@@ -195,6 +199,7 @@ function loadEvents() {
 // ===============================
 export async function fillFormForEdit(evento, id) {
   editingId = id;
+  window.editingId = id;
 
   const fields = [
     "date",
@@ -205,6 +210,7 @@ export async function fillFormForEdit(evento, id) {
     "horaInicio",
     "horaFin",
     "guests",
+    "staffNecesario",
     "total",
     "deposit",
     "status",
@@ -369,6 +375,47 @@ function createCard(evento, id) {
       ? `<span style="background:#34495e; color:white; padding:2px 6px; border-radius:4px; font-size:0.7em; margin-left:5px;">FACT A</span>`
       : "";
 
+  const staff = evento.mensajesEnviados || [];
+
+  const confirmados = staff.filter(
+    (m) => (typeof m === "object" ? m.estado : "pendiente") === "confirmado"
+  ).length;
+
+  const pendientes = staff.filter(
+    (m) => (typeof m === "object" ? m.estado : "pendiente") === "pendiente"
+  ).length;
+
+  const rechazados = staff.filter(
+    (m) => (typeof m === "object" ? m.estado : "pendiente") === "rechazado"
+  ).length;
+
+  const totalAsignados = confirmados + pendientes;
+  let colorStaff = "#c0392b"; // rojo
+
+  if (totalAsignados >= Number(evento.staffNecesario || 0) && totalAsignados > 0) {
+    colorStaff = "#27ae60"; // verde
+  } else if (totalAsignados > 0) {
+    colorStaff = "#f39c12"; // amarillo
+  }
+
+  const staffNecesario = Number(evento.staffNecesario || 0);
+  const faltanMozos = Math.max(staffNecesario - totalAsignados, 0);
+
+  let textoStaff = `👥 Staff: ${totalAsignados} / ${evento.staffNecesario || "-"}`;
+
+  if (staffNecesario > 0) {
+    if (totalAsignados === 0) {
+      textoStaff = `👥 Sin staff asignado`;
+    } else if (faltanMozos === 0) {
+      textoStaff = `👥 Staff completo ✔`;
+    } else if (faltanMozos === 1) {
+      textoStaff = `👥 Falta 1 mozo`;
+    } else {
+      textoStaff = `👥 Faltan ${faltanMozos} mozos`;
+    }
+  }
+
+
   return `
     <div class="card" data-id="${id}" style="cursor:pointer; border:1px solid #ddd; padding:12px; border-radius:8px; margin-bottom:10px; background:white;">
       <div style="display:flex; justify-content:space-between; align-items:flex-start;">
@@ -382,6 +429,14 @@ function createCard(evento, id) {
 
       <div style="margin-top:10px; font-size:0.9em; color:#333; border-top:1px solid #eee; padding-top:5px;">
         📍 ${evento.place} | 👥 ${evento.guests} pers. | 💰 $${Number(evento.total || 0).toLocaleString()}
+        <br>
+        🕒 Evento: ${evento.horaInicio || "-"} a ${evento.horaFin || "-"}
+        <br>
+        👔 Presentación: ${evento.horaPresentacion || "-"}
+        <br>
+        <span style="color:${colorStaff}; font-weight:bold;">
+        ${textoStaff}
+        </span> · ✔ ${confirmados} · ⏳ ${pendientes} · ❌ ${rechazados}
       </div>
     </div>
   `;
@@ -421,6 +476,31 @@ export function initEvents() {
       fillFormForEdit(eventData, id);
     }
   });
+
+  const guestsInput = document.getElementById("guests");
+  const staffInput = document.getElementById("staffNecesario");
+
+  let staffEditadoManualmente = false;
+
+  if (guestsInput && staffInput) {
+    guestsInput.addEventListener("input", function () {
+      const invitados = Number(this.value) || 0;
+
+      if (!staffEditadoManualmente) {
+        staffInput.value = invitados > 0 ? Math.ceil(invitados / 15) : "";
+      }
+    });
+
+    staffInput.addEventListener("input", function () {
+      if (this.value) {
+        staffEditadoManualmente = true;
+      } else {
+        staffEditadoManualmente = false;
+        const invitados = Number(guestsInput.value) || 0;
+        staffInput.value = invitados > 0 ? Math.ceil(invitados / 15) : "";
+      }
+    });
+  }
 
   loadEvents();
   initSearch();
