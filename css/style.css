@@ -197,8 +197,10 @@ body.dark .card.selected {
 }
 
 #addBtn,
-#updateBtn {
-  margin-top: 10px;
+#updateBtn,
+#deleteBtn,
+#cancelFormBtn {
+  margin-top: 0;
 }
 
 @media (max-width: 600px) {
@@ -722,5 +724,27 @@ button:disabled {
 .btn-icon.wa:hover i {
   color: #1ebe5d;
   transform: scale(1.1);
+}
+
+.filtro-estado {
+  padding: 6px 12px;
+  border-radius: 20px;
+  border: 1px solid #ddd;
+  background: white;
+  color: #555;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.filtro-estado.active {
+  background: #d4af37;
+  color: #111;
+  border-color: #d4af37;
+}
+
+.filtro-estado:hover:not(.active) {
+  background: #f9f2dc;
+  color: #111;
 }
 

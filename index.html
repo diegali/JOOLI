@@ -167,55 +167,35 @@
   border-radius:10px;
   display:none;
 ">
-      <div style="
-    font-size:13px;
-    font-weight:bold;
-    color:#666;
-    margin-bottom:10px;
-  ">
+      <div style="font-size:13px; font-weight:bold; color:#666; margin-bottom:10px;">
         Filtros
       </div>
 
-      <label style="
-    display:flex;
-    align-items:center;
-    gap:10px;
-    font-size:15px;
-    color:#333;
-    cursor:pointer;
-    margin-bottom:10px;
-  ">
-        <input type="checkbox" id="mostrarCerrados" style="
-        width:18px;
-        height:18px;
-        margin:0;
-        accent-color:#c9a227;
-        flex-shrink:0;
-        cursor:pointer;
-      ">
+      <label
+        style="display:flex; align-items:center; gap:10px; font-size:15px; color:#333; cursor:pointer; margin-bottom:10px;">
+        <input type="checkbox" id="mostrarCerrados"
+          style="width:18px; height:18px; margin:0; accent-color:#c9a227; flex-shrink:0; cursor:pointer;">
         <span>Mostrar eventos cerrados</span>
       </label>
 
-      <label style="
-    display:flex;
-    align-items:center;
-    gap:10px;
-    font-size:15px;
-    color:#333;
-    cursor:pointer;
-  ">
-        <input type="checkbox" id="mostrarCancelados" style="
-        width:18px;
-        height:18px;
-        margin:0;
-        accent-color:#c0392b;
-        flex-shrink:0;
-        cursor:pointer;
-      ">
+      <label
+        style="display:flex; align-items:center; gap:10px; font-size:15px; color:#333; cursor:pointer; margin-bottom:10px;">
+        <input type="checkbox" id="mostrarCancelados"
+          style="width:18px; height:18px; margin:0; accent-color:#c0392b; flex-shrink:0; cursor:pointer;">
         <span>Mostrar eventos cancelados</span>
       </label>
-    </div>
 
+      <div style="margin-top:10px; border-top:1px solid #eee; padding-top:10px;">
+        <div style="font-size:13px; font-weight:bold; color:#666; margin-bottom:8px;">Estado</div>
+        <div style="display:flex; flex-wrap:wrap; gap:8px;">
+          <button type="button" class="filtro-estado active" data-estado="">Todos</button>
+          <button type="button" class="filtro-estado" data-estado="Presupuestado">Presupuestado</button>
+          <button type="button" class="filtro-estado" data-estado="Seña pagada">Seña pagada</button>
+          <button type="button" class="filtro-estado" data-estado="Confirmado">Confirmado</button>
+          <button type="button" class="filtro-estado" data-estado="Realizado">Realizado</button>
+        </div>
+      </div>
+    </div>
 
 
     <div id="statsContainer" style="
@@ -235,12 +215,7 @@
         <h3 style="margin: 0">Estadísticas del Mes</h3>
         <input type="month" id="monthFilter" style="padding: 5px; border-radius: 5px; border: 1px solid #ccc" />
       </div>
-      <div class="stats" style="
-            display: flex;
-            justify-content: space-around;
-            flex-wrap: wrap;
-            gap: 10px;
-          ">
+      <div class="stats" style="display: flex; justify-content: space-around; flex-wrap: wrap; gap: 10px;">
         <div style="text-align: center">
           <strong>Total:</strong><br /><span id="totalMes">0</span>
         </div>
@@ -252,6 +227,12 @@
         </div>
         <div style="text-align: center">
           <strong>Eventos:</strong><br /><span id="eventosMes">0</span>
+        </div>
+        <div style="text-align: center">
+          <strong>Cobrado:</strong><br /><span id="cobradoMes">0</span>
+        </div>
+        <div style="text-align: center">
+          <strong>Por cobrar:</strong><br /><span id="porCobrarMes">0</span>
         </div>
       </div>
     </div>
@@ -364,8 +345,16 @@
       <div class="form-group" style="margin-top:15px;">
         <label>Presupuesto</label>
 
-        <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:8px;">
-          <button type="button" id="abrirDriveBtn" style="
+        <input type="file" id="presupuestoFile" accept=".pdf,image/*" style="display:none;">
+
+        <div id="presupuestoInfo" style="
+    font-size:13px;
+    color:#666;
+    margin-bottom:8px;
+  ">No hay presupuesto adjunto.</div>
+
+        <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+          <button type="button" id="btnSubirPresupuesto" style="
       padding:10px 14px;
       background:#2c3e50;
       color:white;
@@ -373,19 +362,9 @@
       border-radius:8px;
       cursor:pointer;
     ">
-            📂 Abrir Drive
+            📎 Adjuntar presupuesto
           </button>
-        </div>
 
-        <input type="text" id="presupuestoURL" placeholder="Pegá acá el link de Google Drive" style="
-      width:100%;
-      padding:10px;
-      border:1px solid #ccc;
-      border-radius:8px;
-      box-sizing:border-box;
-    ">
-
-        <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:10px;">
           <button type="button" id="btnVerPresupuesto" style="
       display:none;
       padding:10px 14px;
@@ -407,7 +386,7 @@
       border-radius:8px;
       cursor:pointer;
     ">
-            🗑 Quitar link
+            🗑 Quitar
           </button>
         </div>
       </div>
@@ -442,12 +421,16 @@
 
         </div>
       </div>
-      <div style="margin-top: 10px">
-        <button id="addBtn">Guardar Evento</button>
-        <button id="updateBtn" style="display: none">
-          Actualizar Evento
-        </button>
-        <button id="cancelFormBtn" style="background: #666">Cancelar</button>
+      <div style="margin-top: 10px; display: flex; gap: 8px;">
+        <button id="addBtn"
+          style="flex: 1; height: 44px; padding: 0; display: flex; align-items: center; justify-content: center;">Guardar</button>
+        <button id="updateBtn"
+          style="display: none; flex: 1; height: 44px; padding: 0; display: flex; align-items: center; justify-content: center;">Actualizar</button>
+        <button id="deleteBtn"
+          style="display: none; flex: 1; height: 44px; padding: 0; display: flex; align-items: center; justify-content: center; background: #c0392b">🗑
+          Eliminar</button>
+        <button id="cancelFormBtn"
+          style="flex: 1; height: 44px; padding: 0; display: flex; align-items: center; justify-content: center; background: #666">Cancelar</button>
       </div>
     </div>
 

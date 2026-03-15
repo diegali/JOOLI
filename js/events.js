@@ -8,6 +8,7 @@ import {
   addDoc,
   getDoc,
   updateDoc,
+  deleteDoc,
   doc,
   serverTimestamp,
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
@@ -81,6 +82,12 @@ function formatDate(dateStr) {
 // ===============================
 // FORMULARIO
 // ===============================
+
+window.resetFormConfirmado = function () {
+  document.getElementById("modalAvisoSimple").style.display = "none";
+  resetForm();
+};
+
 export function resetForm() {
   editingId = null;
 
@@ -108,6 +115,9 @@ export function resetForm() {
   if (formTitle) formTitle.innerText = "Nuevo Evento";
   if (updateBtn) updateBtn.style.display = "none";
   if (addBtn) addBtn.style.display = "inline-block";
+
+  const deleteBtn = document.getElementById("deleteBtn");
+  if (deleteBtn) deleteBtn.style.display = "none";
 }
 
 function getFormData() {
@@ -144,6 +154,15 @@ function getFormData() {
 // ===============================
 async function saveEvent() {
   const eventData = getFormData();
+
+  if (!eventData.date || !eventData.client || !eventData.total) {
+    mostrarAvisoSimple(
+      "Faltan datos",
+      "Por favor completá al menos <strong>fecha</strong>, <strong>cliente</strong> y <strong>total</strong> antes de guardar.",
+      "⚠️"
+    );
+    return;
+  }
   const userName = getCurrentUserName();
   const userEmail = auth.currentUser?.email;
   if (!["Realizado", "Cancelado"].includes(eventData.status)) {
@@ -172,6 +191,15 @@ async function updateExistingEvent() {
   if (!editingId) return;
 
   const eventData = getFormData();
+
+  if (!eventData.date || !eventData.client || !eventData.total) {
+    mostrarAvisoSimple(
+      "Faltan datos",
+      "Por favor completá al menos <strong>fecha</strong>, <strong>cliente</strong> y <strong>total</strong> antes de guardar.",
+      "⚠️"
+    );
+    return;
+  }
   const userName = getCurrentUserName();
   const userEmail = auth.currentUser?.email;
   if (!puedeEditarPresupuesto()) {
@@ -270,53 +298,38 @@ export async function fillFormForEdit(evento, id) {
   if (updateBtn) updateBtn.style.display = "inline-block";
   if (addBtn) addBtn.style.display = "none";
 
+  const deleteBtn = document.getElementById("deleteBtn");
+  if (deleteBtn) {
+    deleteBtn.style.display = "inline-block";
+  }
+
   if (form) {
     form.style.display = "block";
     form.scrollIntoView({ behavior: "smooth" });
   }
-  const abrirDriveBtn = document.getElementById("abrirDriveBtn");
-  const presupuestoInput = document.getElementById("presupuestoURL");
   const verBtn = document.getElementById("btnVerPresupuesto");
   const eliminarBtn = document.getElementById("btnEliminarPresupuesto");
-
+  const subirBtn = document.getElementById("btnSubirPresupuesto");
+  const infoEl = document.getElementById("presupuestoInfo");
   const puedeEditar = puedeEditarPresupuesto();
 
-  if (abrirDriveBtn) {
-    abrirDriveBtn.style.display = puedeEditar ? "inline-block" : "none";
+  if (infoEl) {
+    infoEl.textContent = evento.presupuestoNombre
+      ? `Archivo: ${evento.presupuestoNombre}`
+      : "No hay presupuesto adjunto.";
   }
 
-  if (presupuestoInput) {
-
-    if (puedeEditar) {
-      presupuestoInput.value = evento.presupuestoURL || "";
-      presupuestoInput.disabled = false;
-      presupuestoInput.placeholder = "Pegá acá el link de Google Drive";
-
-    } else {
-      presupuestoInput.value = "";
-      presupuestoInput.disabled = true;
-      presupuestoInput.placeholder = evento.presupuestoURL
-        ? "Presupuesto cargado"
-        : "No hay presupuesto cargado";
-    }
-
+  if (subirBtn) {
+    subirBtn.style.display = puedeEditar ? "inline-block" : "none";
   }
 
-
-  if (evento.presupuestoURL) {
-    if (verBtn) {
-      verBtn.style.display = "inline-block";
-      verBtn.onclick = () => {
-        window.open(evento.presupuestoURL, "_blank");
-      };
-    }
-  } else {
-    if (verBtn) verBtn.style.display = "none";
+  if (verBtn) {
+    verBtn.style.display = evento.presupuestoURL ? "inline-block" : "none";
+    verBtn.onclick = () => window.open(evento.presupuestoURL, "_blank");
   }
 
   if (eliminarBtn) {
-    eliminarBtn.style.display =
-      puedeEditar && evento.presupuestoURL ? "inline-block" : "none";
+    eliminarBtn.style.display = puedeEditar && evento.presupuestoURL ? "inline-block" : "none";
   }
 
 
@@ -335,56 +348,42 @@ function puedeEditarPresupuesto() {
 function actualizarUIBudget(evento) {
   const btnVer = document.getElementById("btnVerPresupuesto");
   const btnEliminar = document.getElementById("btnEliminarPresupuesto");
+  const btnSubir = document.getElementById("btnSubirPresupuesto");
   const info = document.getElementById("presupuestoInfo");
+  const puedeEditar = puedeEditarPresupuesto();
 
   if (!btnVer || !btnEliminar || !info) return;
 
   if (evento?.presupuestoURL) {
     btnVer.style.display = "inline-block";
-    btnEliminar.style.display = "inline-block";
-    info.innerHTML = `Archivo actual: <strong>${evento.presupuestoNombre || "Presupuesto"}</strong>`;
+    btnEliminar.style.display = puedeEditar ? "inline-block" : "none";
+    info.textContent = `Archivo: ${evento.presupuestoNombre || "Presupuesto"}`;
   } else {
     btnVer.style.display = "none";
     btnEliminar.style.display = "none";
-    info.innerHTML = "No hay presupuesto adjunto.";
+    info.textContent = "No hay presupuesto adjunto.";
+  }
+
+  if (btnSubir) {
+    btnSubir.style.display = puedeEditar ? "inline-block" : "none";
   }
 }
 
 async function subirPresupuestoEvento(file) {
   if (!editingId) {
-    alert("Primero guarda el evento para poder adjuntar el presupuesto.");
+    mostrarAvisoSimple("Atención", "Primero guardá el evento para poder adjuntar el presupuesto.", "⚠️");
     return;
   }
 
   if (!file) return;
 
-  const tiposPermitidos = [
-    "application/pdf",
-    "image/jpeg",
-    "image/png",
-    "image/webp",
-  ];
-
+  const tiposPermitidos = ["application/pdf", "image/jpeg", "image/png", "image/webp"];
   if (!tiposPermitidos.includes(file.type)) {
-    alert("Solo se permiten archivos PDF o imágenes.");
-    return;
-  }
-
-  const eventoActual = window.allEventsData.find((ev) => ev.id === editingId);
-  if (!eventoActual) {
-    alert("No se encontró el evento.");
+    mostrarAvisoSimple("Archivo no válido", "Solo se permiten archivos PDF o imágenes.", "⚠️");
     return;
   }
 
   try {
-    if (eventoActual.presupuestoPath) {
-      try {
-        await deleteObject(ref(storage, eventoActual.presupuestoPath));
-      } catch (e) {
-        console.warn("No se pudo borrar el presupuesto anterior:", e);
-      }
-    }
-
     const extension = file.name.split(".").pop();
     const path = `presupuestos/${editingId}/presupuesto.${extension}`;
     const storageRef = ref(storage, path);
@@ -397,9 +396,14 @@ async function subirPresupuestoEvento(file) {
       presupuestoNombre: file.name,
       presupuestoPath: path,
     });
+
+    mostrarAvisoSimple("Listo", "Presupuesto subido correctamente.", "✅");
+
+    const eventoActualizado = { ...window.allEventsData.find(ev => ev.id === editingId), presupuestoURL: url, presupuestoNombre: file.name };
+    actualizarUIBudget(eventoActualizado);
   } catch (error) {
     console.error("Error al subir presupuesto:", error);
-    alert("Hubo un problema al subir el presupuesto.");
+    mostrarAvisoSimple("Error", "No se pudo subir el presupuesto. Intentá de nuevo.", "❌");
   }
 }
 
@@ -409,9 +413,6 @@ async function eliminarPresupuestoEvento() {
   const eventoActual = window.allEventsData.find((ev) => ev.id === editingId);
   if (!eventoActual?.presupuestoPath) return;
 
-  const confirmar = confirm("¿Seguro que quieres eliminar el presupuesto adjunto?");
-  if (!confirmar) return;
-
   try {
     await deleteObject(ref(storage, eventoActual.presupuestoPath));
 
@@ -420,9 +421,11 @@ async function eliminarPresupuestoEvento() {
       presupuestoNombre: "",
       presupuestoPath: "",
     });
+
+    mostrarAvisoSimple("Listo", "Presupuesto eliminado correctamente.", "✅");
   } catch (error) {
     console.error("Error al eliminar presupuesto:", error);
-    alert("No se pudo eliminar el presupuesto.");
+    mostrarAvisoSimple("Error", "No se pudo eliminar el presupuesto.", "❌");
   }
 }
 
@@ -459,18 +462,42 @@ function updateClientDatalist(events) {
 }
 
 function updateStats(events) {
-  const totalMes = events.reduce((sum, e) => sum + Number(e.total || 0), 0);
-  const senasMes = events.reduce((sum, e) => sum + Number(e.deposit || 0), 0);
+  const monthFilter = document.getElementById("monthFilter")?.value;
+
+  let eventosFiltrados = events;
+
+  if (monthFilter) {
+    eventosFiltrados = window.allEventsData.filter(e => {
+      return e.date && e.date.startsWith(monthFilter);
+    });
+  } else {
+    const today = new Date();
+    const mesActual = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
+    eventosFiltrados = window.allEventsData.filter(e => {
+      return e.date && e.date.startsWith(mesActual);
+    });
+  }
+
+  eventosFiltrados = eventosFiltrados.filter(e => e.status !== "Cancelado");
+
+  const totalMes = eventosFiltrados.reduce((sum, e) => sum + Number(e.total || 0), 0);
+  const senasMes = eventosFiltrados.reduce((sum, e) => sum + Number(e.deposit || 0), 0);
+  const cobrado = eventosFiltrados.filter(e => e.paid === true).reduce((sum, e) => sum + Number(e.total || 0), 0);
+  const porCobrar = totalMes - cobrado;
 
   const totalEl = document.getElementById("totalMes");
   const senasEl = document.getElementById("senasMes");
   const saldoEl = document.getElementById("saldoMes");
   const countEl = document.getElementById("eventosMes");
+  const cobradoEl = document.getElementById("cobradoMes");
+  const porCobrarEl = document.getElementById("porCobrarMes");
 
   if (totalEl) totalEl.innerText = `$${totalMes.toLocaleString()}`;
   if (senasEl) senasEl.innerText = `$${senasMes.toLocaleString()}`;
   if (saldoEl) saldoEl.innerText = `$${(totalMes - senasMes).toLocaleString()}`;
-  if (countEl) countEl.innerText = events.length;
+  if (countEl) countEl.innerText = eventosFiltrados.length;
+  if (cobradoEl) cobradoEl.innerText = `$${cobrado.toLocaleString()}`;
+  if (porCobrarEl) porCobrarEl.innerText = `$${porCobrar.toLocaleString()}`;
 }
 
 function abrirModalConfirmarRealizacion(evento) {
@@ -500,17 +527,22 @@ function cerrarModalConfirmarRealizacion() {
   modalConfirmacionAbierto = false;
 }
 
-function mostrarAvisoSimple(titulo, mensaje, icono = "⚠️") {
+function mostrarAvisoSimple(titulo, mensaje, icono = "⚠️", mostrarBotonEntendido = true) {
   const modal = document.getElementById("modalAvisoSimple");
   const tituloEl = document.getElementById("modalAvisoTitulo");
   const mensajeEl = document.getElementById("modalAvisoMensaje");
   const iconoEl = document.getElementById("modalAvisoIcono");
+  const btnEntendido = document.getElementById("btnCerrarAvisoSimple");
 
   if (!modal || !tituloEl || !mensajeEl || !iconoEl) return;
 
   tituloEl.textContent = titulo;
   mensajeEl.innerHTML = mensaje;
   iconoEl.textContent = icono;
+
+  if (btnEntendido) {
+    btnEntendido.style.display = mostrarBotonEntendido ? "inline-block" : "none";
+  }
 
   modal.style.display = "flex";
 }
@@ -592,6 +624,7 @@ export function renderFilteredEvents(events) {
     document.getElementById("mostrarCerrados")?.checked ?? false;
   const mostrarCancelados =
     document.getElementById("mostrarCancelados")?.checked ?? false;
+  const estadoActivo = document.querySelector(".filtro-estado.active")?.dataset.estado || "";
 
   events = events.filter((e) => {
     const esPasado = e.date < today;
@@ -600,6 +633,7 @@ export function renderFilteredEvents(events) {
 
     if (!mostrarCerrados && esCerrado) return false;
     if (!mostrarCancelados && esCancelado) return false;
+    if (estadoActivo && e.status !== estadoActivo) return false;
 
     return true;
   });
@@ -740,7 +774,8 @@ function createCard(evento, id) {
       </div>
 
       <div style="margin-top:10px; font-size:0.9em; color:#333; border-top:1px solid #eee; padding-top:5px;">
-        📍 ${evento.place} | 👥 ${evento.guests} pers. | 💰 $${Number(evento.total || 0).toLocaleString()}
+       📍 ${evento.place} | 👥 ${evento.guests} pers. | 💰 $${Number(evento.total || 0).toLocaleString()}
+        ${evento.ultimoCambioPor ? `<br><span style="font-size:0.8em; color:#999;">✏️ Último cambio: ${evento.ultimoCambioPor}</span>` : ""}
         <br>
         🕒 Evento: ${evento.horaInicio || "-"} a ${evento.horaFin || "-"}
         <br>
@@ -749,6 +784,17 @@ function createCard(evento, id) {
         <span style="color:${colorStaff}; font-weight:bold;">
 ${textoStaff}
 </span> · ✔ ${confirmados} · ⏳ ${pendientes} · ❌ ${rechazados}
+
+${evento.notes ? `
+  <br>
+  <span style="
+    display:block;
+    margin-top:6px;
+    font-size:0.82em;
+    color:#666;
+    font-style:italic;
+  ">📝 ${evento.notes.length > 80 ? evento.notes.substring(0, 80) + "..." : evento.notes}</span>
+` : ""}
 
 ${evento.presupuestoURL ? `
   <br>
@@ -774,11 +820,68 @@ ${evento.presupuestoURL ? `
   `;
 }
 
+async function eliminarEvento() {
+  if (!editingId) return;
+
+  const eventoActual = window.allEventsData.find(ev => ev.id === editingId);
+  const nombreEvento = eventoActual?.client || "este evento";
+
+  mostrarAvisoSimple(
+    "¿Eliminar evento?",
+    `¿Seguro que querés eliminar el evento de <strong>${nombreEvento}</strong>? Esta acción no se puede deshacer.<br><br>` +
+    "<button onclick=\"window.confirmarEliminarEvento()\" style=\"" +
+    "padding:10px 20px; background:#c0392b; color:white; border:none; " +
+    "border-radius:8px; cursor:pointer; font-weight:600; margin-right:8px;" +
+    "\">Sí, eliminar</button>" +
+    "<button onclick=\"document.getElementById('modalAvisoSimple').style.display='none'\" style=\"" +
+    "padding:10px 20px; background:#95a5a6; color:white; border:none; " +
+    "border-radius:8px; cursor:pointer; font-weight:600;" +
+    "\">Cancelar</button>",
+    "🗑",
+    false
+  );
+}
+
+window.confirmarEliminarEvento = async function () {
+  document.getElementById("modalAvisoSimple").style.display = "none";
+
+  try {
+    await deleteDoc(doc(db, "events", editingId));
+    resetForm();
+  } catch (error) {
+    console.error("Error al eliminar evento:", error);
+    mostrarAvisoSimple("Error", "No se pudo eliminar el evento. Intentá de nuevo.", "❌");
+  }
+};
+
 // ===============================
 // INIT
 // ===============================
 export function initEvents() {
-  document.getElementById("cancelFormBtn")?.addEventListener("click", resetForm);
+  document.getElementById("deleteBtn")?.addEventListener("click", eliminarEvento);
+  document.getElementById("cancelFormBtn")?.addEventListener("click", () => {
+    const client = document.getElementById("client")?.value;
+    const date = document.getElementById("date")?.value;
+
+    if (client || date) {
+      mostrarAvisoSimple(
+        "¿Cancelar?",
+        "Tenés datos cargados. ¿Seguro que querés cancelar?<br><br>" +
+        "<button onclick=\"window.resetFormConfirmado()\" style=\"" +
+        "padding:10px 20px; background:#e74c3c; color:white; border:none; " +
+        "border-radius:8px; cursor:pointer; font-weight:600; margin-right:8px;" +
+        "\">Sí, cancelar</button>" +
+        "<button onclick=\"document.getElementById('modalAvisoSimple').style.display='none'\" style=\"" +
+        "padding:10px 20px; background:#95a5a6; color:white; border:none; " +
+        "border-radius:8px; cursor:pointer; font-weight:600;" +
+        "\">Volver</button>",
+        "⚠️",
+        false
+      );
+    } else {
+      resetForm();
+    }
+  });
   document.getElementById("addBtn")?.addEventListener("click", saveEvent);
   document.getElementById("updateBtn")?.addEventListener("click", updateExistingEvent);
 
@@ -809,15 +912,6 @@ export function initEvents() {
       actualizarUIBudget(eventData);
     }
   });
-
-  const abrirDriveBtn = document.getElementById("abrirDriveBtn");
-
-  if (abrirDriveBtn) {
-    abrirDriveBtn.addEventListener("click", () => {
-      window.open("https://drive.google.com", "_blank");
-    });
-  }
-
 
   const btnCerrarAvisoSimple = document.getElementById("btnCerrarAvisoSimple");
 
@@ -886,6 +980,18 @@ export function initEvents() {
     ) {
       renderFilteredEvents(window.allEventsData || []);
     }
+    if (e.target.id === "monthFilter") {
+      updateStats(window.allEventsData || []);
+    }
+  });
+
+  document.getElementById("filtrosEventos")?.addEventListener("click", (e) => {
+    const btn = e.target.closest(".filtro-estado");
+    if (!btn) return;
+
+    document.querySelectorAll(".filtro-estado").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    renderFilteredEvents(window.allEventsData || []);
   });
 
   const presupuestoFile = document.getElementById("presupuestoFile");
@@ -912,12 +1018,12 @@ export function initEvents() {
   }
 
   if (btnVerPresupuesto) {
-    btnVerPresupuesto.addEventListener("click", () => {
+    btnVerPresupuesto.onclick = () => {
       const eventoActual = window.allEventsData.find((ev) => ev.id === editingId);
       if (eventoActual?.presupuestoURL) {
         window.open(eventoActual.presupuestoURL, "_blank");
       }
-    });
+    };
   }
 
   if (btnEliminarPresupuesto) {
