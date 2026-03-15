@@ -24,7 +24,7 @@ import {
 // SECCIONES Y UI
 // ===============================
 window.showSection = function (sectionId) {
-  const sections = ["calendar", "eventsList", "statsContainer"];
+  const sections = ["calendar", "eventsList", "statsContainer", "staffSection"];
   const searchSection = document.getElementById("searchSection");
   const addEventContainer = document.getElementById("addEventContainer");
   const formContainer = document.getElementById("eventFormContainer");
@@ -51,8 +51,13 @@ window.showSection = function (sectionId) {
   }
 
   if (addEventContainer) {
-    addEventContainer.style.display =
-      sectionId === "calendar" ? "block" : "none";
+    addEventContainer.style.display = sectionId === "calendar" ? "block" : "none";
+  }
+
+  if (sectionId === "staffSection") {
+    if (typeof window.cargarListaStaffSeccion === "function") {
+      window.cargarListaStaffSeccion();
+    }
   }
 
   if (sectionId === "calendar") {
@@ -260,6 +265,8 @@ document.addEventListener("DOMContentLoaded", () => {
     if (user) {
       if (loginDiv) loginDiv.style.display = "none";
       if (appDiv) appDiv.style.display = "block";
+      const header = document.getElementById("mainHeader");
+      if (header) header.style.display = "flex";
 
       updateUserNameDisplay();
 

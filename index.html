@@ -6,9 +6,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>JOOLI Agenda</title>
 
-  <link rel="stylesheet" href="./css/style.css?v=1.1" />
+  <link rel="stylesheet" href="./css/style.css?v=2.0" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
-  <script type="module" src="./js/main.js"></script>
+  <script type="module" src="./js/main.js?v=2.0"></script>
   <link rel="icon" href="logoB.png" />
 
   <link rel="manifest" href="manifest.json" />
@@ -18,7 +18,7 @@
 </head>
 
 <body>
-  <header>
+  <header id="mainHeader" style="display:none;">
     <div class="logo-container">
       <img src="./logoB.png" class="logo" alt="Logo" />
     </div>
@@ -86,11 +86,13 @@
               margin-bottom: 12px;
             "></small>
         <button id="logoutBtn" class="btn-logout" style="
-              background: #e74c3c;
-              color: white;
-              border: none;
-              cursor: pointer;
-            ">
+          background: transparent;
+          color: #aaa;
+          border: 1px solid #444;
+          cursor: pointer;
+          font-size: 12px;
+          padding: 6px 12px;
+        ">
           Salir
         </button>
       </div>
@@ -98,22 +100,60 @@
   </header>
 
 
-  <div class="container" id="loginDiv">
-    <div style="text-align: center; margin-bottom: 20px">
-      <h3 style="color: var(--gold)">Bienvenido a JOOLI</h3>
-      <p>Ingresa tus credenciales para continuar</p>
+  <div id="loginDiv" style="
+  min-height: 100vh;
+  background: #111;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
+  box-sizing: border-box;
+">
+    <div style="text-align:center; margin-bottom:32px;">
+      <div style="font-size:28px; font-weight:700; color:#d4af37; letter-spacing:2px;">JOOLI</div>
+      <div style="font-size:11px; color:#888; letter-spacing:1px; text-transform:uppercase; margin-top:4px;">
+        CateringDesk · Agenda de eventos</div>
     </div>
-    <div class="form-group">
-      <label>Email</label>
-      <input type="email" id="email" placeholder="ejemplo@correo.com" />
+
+    <div style="
+    background:white;
+    border-radius:16px;
+    padding:28px 24px;
+    width:100%;
+    max-width:340px;
+    box-sizing:border-box;
+  ">
+      <h3 style="font-size:18px; font-weight:700; color:#111; margin:0 0 4px 0;">Bienvenido</h3>
+      <p style="font-size:13px; color:#888; margin:0 0 20px 0;">Ingresá tus credenciales para continuar</p>
+
+      <div style="margin-bottom:14px;">
+        <label
+          style="font-size:12px; font-weight:600; color:#555; display:block; margin-bottom:5px; text-transform:uppercase; letter-spacing:0.5px;">Email</label>
+        <input type="email" id="email" placeholder="ejemplo@correo.com" style="
+        width:100%; padding:12px 14px; border:1px solid #e0e0e0;
+        border-radius:10px; font-size:15px; color:#111;
+        box-sizing:border-box; outline:none;
+      ">
+      </div>
+
+      <div style="margin-bottom:14px;">
+        <label
+          style="font-size:12px; font-weight:600; color:#555; display:block; margin-bottom:5px; text-transform:uppercase; letter-spacing:0.5px;">Contraseña</label>
+        <input type="password" id="password" placeholder="••••••••" style="
+        width:100%; padding:12px 14px; border:1px solid #e0e0e0;
+        border-radius:10px; font-size:15px; color:#111;
+        box-sizing:border-box; outline:none;
+      ">
+      </div>
+
+      <button id="loginBtn" style="
+      width:100%; padding:14px; background:#d4af37;
+      color:#111; border:none; border-radius:10px;
+      font-size:15px; font-weight:700; cursor:pointer;
+      margin-top:6px;
+    ">Ingresar</button>
     </div>
-    <div class="form-group">
-      <label>Contraseña</label>
-      <input type="password" id="password" placeholder="••••••••" />
-    </div>
-    <button id="loginBtn" style="width: 100%; margin-top: 10px">
-      Ingresar
-    </button>
   </div>
 
   <div class="container" id="appDiv" style="display: none">
@@ -132,19 +172,11 @@
       <button id="btn-eventsList" class="nav-btn" onclick="showSection('eventsList')">
         📜 Lista
       </button>
+      <button id="btn-staffSection" class="nav-btn" onclick="showSection('staffSection')">
+        👥 Staff
+      </button>
       <button id="btn-statsContainer" class="nav-btn" onclick="showSection('statsContainer')">
         📊 Stats
-      </button>
-      <button id="btn-staff" onclick="abrirModal()" style="
-            padding: 10px;
-            background: #3498db;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            white-space: nowrap;
-          ">
-        👥 Staff
       </button>
     </nav>
 
@@ -171,69 +203,110 @@
         Filtros
       </div>
 
-      <label
-        style="display:flex; align-items:center; gap:10px; font-size:15px; color:#333; cursor:pointer; margin-bottom:10px;">
-        <input type="checkbox" id="mostrarCerrados"
-          style="width:18px; height:18px; margin:0; accent-color:#c9a227; flex-shrink:0; cursor:pointer;">
-        <span>Mostrar eventos cerrados</span>
-      </label>
+      <div style="display:flex; gap:8px; margin-bottom:10px;">
+        <label style="
+      flex:1; display:flex; align-items:center; gap:8px;
+      background:#f4f1eb; border:1px solid #e0dbd0;
+      border-radius:8px; padding:8px 10px; cursor:pointer;
+      font-size:13px; font-weight:600; color:#555;
+    ">
+          <input type="checkbox" id="mostrarCerrados"
+            style="width:16px; height:16px; margin:0; accent-color:#c9a227; flex-shrink:0; cursor:pointer;">
+          <span>Cerrados</span>
+        </label>
 
-      <label
-        style="display:flex; align-items:center; gap:10px; font-size:15px; color:#333; cursor:pointer; margin-bottom:10px;">
-        <input type="checkbox" id="mostrarCancelados"
-          style="width:18px; height:18px; margin:0; accent-color:#c0392b; flex-shrink:0; cursor:pointer;">
-        <span>Mostrar eventos cancelados</span>
-      </label>
+        <label style="
+      flex:1; display:flex; align-items:center; gap:8px;
+      background:#f4f1eb; border:1px solid #e0dbd0;
+      border-radius:8px; padding:8px 10px; cursor:pointer;
+      font-size:13px; font-weight:600; color:#555;
+    ">
+          <input type="checkbox" id="mostrarCancelados"
+            style="width:16px; height:16px; margin:0; accent-color:#c0392b; flex-shrink:0; cursor:pointer;">
+          <span>Cancelados</span>
+        </label>
+      </div>
 
       <div style="margin-top:10px; border-top:1px solid #eee; padding-top:10px;">
         <div style="font-size:13px; font-weight:bold; color:#666; margin-bottom:8px;">Estado</div>
-        <div style="display:flex; flex-wrap:wrap; gap:8px;">
-          <button type="button" class="filtro-estado active" data-estado="">Todos</button>
-          <button type="button" class="filtro-estado" data-estado="Presupuestado">Presupuestado</button>
-          <button type="button" class="filtro-estado" data-estado="Seña pagada">Seña pagada</button>
-          <button type="button" class="filtro-estado" data-estado="Confirmado">Confirmado</button>
-          <button type="button" class="filtro-estado" data-estado="Realizado">Realizado</button>
+        <div style="
+          display:flex;
+          flex-wrap:nowrap;
+          gap:8px;
+          overflow-x:auto;
+          padding-bottom:4px;
+          padding-right:32px;
+          -webkit-overflow-scrolling:touch;
+          scrollbar-width:none;
+          mask-image:linear-gradient(to right, black 85%, transparent 100%);
+          -webkit-mask-image:linear-gradient(to right, black 85%, transparent 100%);
+        ">
+          <button type="button" class="filtro-estado active" data-estado="" style="flex-shrink:0;">Todos</button>
+          <button type="button" class="filtro-estado" data-estado="Presupuestado"
+            style="flex-shrink:0;">Presupuestado</button>
+          <button type="button" class="filtro-estado" data-estado="Seña pagada" style="flex-shrink:0;">Seña
+            pagada</button>
+          <button type="button" class="filtro-estado" data-estado="Confirmado"
+            style="flex-shrink:0;">Confirmado</button>
+          <button type="button" class="filtro-estado" data-estado="Realizado" style="flex-shrink:0;">Realizado</button>
         </div>
       </div>
     </div>
 
 
-    <div id="statsContainer" style="
-          display: none;
-          background: #f9f9f9;
-          padding: 15px;
-          border-radius: 10px;
-          margin-bottom: 20px;
-          border: 1px solid #ddd;
-        ">
-      <div style="
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-          ">
-        <h3 style="margin: 0">Estadísticas del Mes</h3>
-        <input type="month" id="monthFilter" style="padding: 5px; border-radius: 5px; border: 1px solid #ccc" />
-      </div>
-      <div class="stats" style="display: flex; justify-content: space-around; flex-wrap: wrap; gap: 10px;">
-        <div style="text-align: center">
-          <strong>Total:</strong><br /><span id="totalMes">0</span>
+    <div id="statsContainer" style="display:none; margin-bottom:20px;">
+      <div style="background:white; border-radius:12px; border:1px solid #e8e4d9; padding:16px;">
+
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+          <div style="font-size:15px; font-weight:600; color:#222;">Estadísticas</div>
+          <input type="month" id="monthFilter"
+            style="font-size:13px; padding:4px 10px; border-radius:20px; border:1px solid #ddd; background:#f4f1eb; color:#888; width:auto;">
         </div>
-        <div style="text-align: center">
-          <strong>Señas:</strong><br /><span id="senasMes">0</span>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:10px;">
+          <div style="background:#111; border-radius:10px; padding:12px 10px; text-align:center;">
+            <div
+              style="font-size:11px; font-weight:600; color:#d4af37; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">
+              Total</div>
+            <div style="font-size:17px; font-weight:700; color:#d4af37;" id="totalMes">$0</div>
+          </div>
+          <div style="background:#f4f1eb; border-radius:10px; padding:12px 10px; text-align:center;">
+            <div
+              style="font-size:11px; font-weight:600; color:#888; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">
+              Señas</div>
+            <div style="font-size:17px; font-weight:700; color:#222;" id="senasMes">$0</div>
+          </div>
+          <div style="background:#f4f1eb; border-radius:10px; padding:12px 10px; text-align:center;">
+            <div
+              style="font-size:11px; font-weight:600; color:#888; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">
+              Saldo</div>
+            <div style="font-size:17px; font-weight:700; color:#222;" id="saldoMes">$0</div>
+          </div>
         </div>
-        <div style="text-align: center">
-          <strong>Saldo:</strong><br /><span id="saldoMes">0</span>
+
+        <div style="height:1px; background:#e8e4d9; margin:10px 0;"></div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px;">
+          <div style="background:#f4f1eb; border-radius:10px; padding:12px 10px; text-align:center;">
+            <div
+              style="font-size:11px; font-weight:600; color:#888; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">
+              Eventos</div>
+            <div style="font-size:17px; font-weight:700; color:#222;" id="eventosMes">0</div>
+          </div>
+          <div style="background:#f4f1eb; border-radius:10px; padding:12px 10px; text-align:center;">
+            <div
+              style="font-size:11px; font-weight:600; color:#888; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">
+              Cobrado</div>
+            <div style="font-size:17px; font-weight:700; color:#27ae60;" id="cobradoMes">$0</div>
+          </div>
+          <div style="background:#f4f1eb; border-radius:10px; padding:12px 10px; text-align:center;">
+            <div
+              style="font-size:11px; font-weight:600; color:#888; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">
+              Por cobrar</div>
+            <div style="font-size:17px; font-weight:700; color:#e67e22;" id="porCobrarMes">$0</div>
+          </div>
         </div>
-        <div style="text-align: center">
-          <strong>Eventos:</strong><br /><span id="eventosMes">0</span>
-        </div>
-        <div style="text-align: center">
-          <strong>Cobrado:</strong><br /><span id="cobradoMes">0</span>
-        </div>
-        <div style="text-align: center">
-          <strong>Por cobrar:</strong><br /><span id="porCobrarMes">0</span>
-        </div>
+
       </div>
     </div>
 
@@ -275,9 +348,12 @@
           <label>Tipo</label>
           <select id="type">
             <option>Catering Completo</option>
-            <option>Solo Finger Food</option>
-            <option>Mesa Dulce</option>
-            <option>Personal de Servicio</option>
+            <option>Coffee</option>
+            <option>Almuerzo/Cena informal</option>
+            <option>Almuerzo/Cena formal</option>
+            <option>Asado</option>
+            <option>Cumpleaños</option>
+            <option>Cumpleaños de 15</option>
           </select>
         </div>
         <div class="form-group">
@@ -341,6 +417,24 @@
       </div>
       <div class="form-group">
         <label>Notas</label><textarea id="notes"></textarea>
+      </div>
+      <div class="form-group" style="margin-top:10px;">
+        <label>Alquileres necesarios</label>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:6px;">
+          <label class="alquiler-label">
+            <input type="checkbox" id="alqVajilla"> Vajilla
+          </label>
+          <label class="alquiler-label">
+            <input type="checkbox" id="alqManteleria"> Mantelería
+          </label>
+          <label class="alquiler-label">
+            <input type="checkbox" id="alqMobiliario"> Mobiliario
+          </label>
+          <label class="alquiler-label">
+            <input type="checkbox" id="alqMobiliarioTrabajo"> Mob. trabajo
+          </label>
+        </div>
+        <input type="text" id="alqNotas" placeholder="Notas de alquiler (proveedor, precio...)" style="margin-top:8px;">
       </div>
       <div class="form-group" style="margin-top:15px;">
         <label>Presupuesto</label>
@@ -436,61 +530,80 @@
 
 
     <div id="eventsList" style="display: none"></div>
+    <div id="staffSection" style="display:none;">
+      <div style="background:white; border-radius:14px; padding:20px; border:1px solid #e8e4d9;">
+
+        <div style="font-size:16px; font-weight:700; color:#111; margin-bottom:18px;">👥 Gestionar Staff</div>
+
+        <div style="display:flex; gap:8px; margin-bottom:14px;">
+          <input type="text" id="mozoNombre" placeholder="Nombre" style="
+        flex:1; padding:10px 12px; border:1px solid #ddd;
+        border-radius:8px; font-size:14px;
+      ">
+          <input type="text" id="mozoTelefono" placeholder="Teléfono" style="
+        flex:1; padding:10px 12px; border:1px solid #ddd;
+        border-radius:8px; font-size:14px;
+      ">
+          <button onclick="guardarMozo()" style="
+        padding:10px 14px; background:#d4af37; color:#111;
+        border:none; border-radius:8px; font-weight:700;
+        cursor:pointer; white-space:nowrap; font-size:14px;
+      ">+ Agregar</button>
+        </div>
+
+        <div style="height:1px; background:#f0ece3; margin-bottom:14px;"></div>
+
+        <div id="listaStaff" style="max-height:400px; overflow-y:auto;"></div>
+
+      </div>
+    </div>
   </div>
 
   <div id="staffModal" style="
-        display: none;
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.5);
-        z-index: 1000;
-        justify-content: center;
-        align-items: center;
-      ">
+  display:none;
+  position:fixed;
+  top:0; left:0;
+  width:100%; height:100%;
+  background:rgba(0,0,0,0.5);
+  z-index:1000;
+  justify-content:center;
+  align-items:center;
+">
     <div style="
-          background: white;
-          padding: 20px;
-          border-radius: 10px;
-          width: 90%;
-          max-width: 400px;
-        ">
-      <h3>Gestionar Staff</h3>
-      <input type="text" id="mozoNombre" placeholder="Nombre del mozo"
-        style="width: 100%; margin-bottom: 10px; padding: 8px" />
-      <input type="text" id="mozoTelefono" placeholder="Teléfono (ej: 5491122334455)"
-        style="width: 100%; margin-bottom: 10px; padding: 8px" />
-      <button onclick="guardarMozo()" style="
-            width: 100%;
-            padding: 10px;
-            background: #27ae60;
-            color: white;
-            border: none;
-            border-radius: 5px;
-          ">
-        Guardar
-      </button>
-      <button onclick="cerrarModal()" style="
-            width: 100%;
-            padding: 10px;
-            margin-top: 5px;
-            background: #7f8c8d;
-            color: white;
-            border: none;
-            border-radius: 5px;
-          ">
-        Cancelar
-      </button>
+    background:white;
+    padding:20px;
+    border-radius:14px;
+    width:92%;
+    max-width:400px;
+    box-shadow:0 10px 30px rgba(0,0,0,0.2);
+  ">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px;">
+        <div style="font-size:16px; font-weight:700; color:#111;">👥 Gestionar Staff</div>
+        <button onclick="cerrarModal()" style="
+        background:none; border:none; font-size:22px;
+        cursor:pointer; color:#aaa; padding:0;
+      ">✕</button>
+      </div>
 
-      <div id="listaStaff" style="
-            margin-top: 15px;
-            max-height: 200px;
-            overflow-y: auto;
-            border-top: 1px solid #eee;
-            padding-top: 10px;
-          "></div>
+      <div style="display:flex; gap:8px; margin-bottom:14px;">
+        <input type="text" id="mozoNombre" placeholder="Nombre" style="
+        flex:1; padding:10px 12px; border:1px solid #ddd;
+        border-radius:8px; font-size:14px;
+      ">
+        <input type="text" id="mozoTelefono" placeholder="Teléfono" style="
+        flex:1; padding:10px 12px; border:1px solid #ddd;
+        border-radius:8px; font-size:14px;
+      ">
+        <button onclick="guardarMozo()" style="
+        padding:10px 14px; background:#d4af37; color:#111;
+        border:none; border-radius:8px; font-weight:700;
+        cursor:pointer; white-space:nowrap; font-size:14px;
+      ">+ Agregar</button>
+      </div>
+
+      <div style="height:1px; background:#f0ece3; margin-bottom:14px;"></div>
+
+      <div id="listaStaff" style="max-height:280px; overflow-y:auto;"></div>
     </div>
   </div>
 
@@ -593,14 +706,12 @@
         <h4 style="margin-top: 0">Selecciona los mozos:</h4>
         <div id="listadoCheckboxesCompleto" style="max-height: 200px; overflow-y: auto; margin-bottom: 10px"></div>
         <button id="btnConfirmarAsignacion" style="
-              width: 100%;
-              padding: 8px;
-              background: #27ae60;
-              color: white;
-              border: none;
-              border-radius: 5px;
-              cursor: pointer;
-            ">
+  width:100%; padding:12px;
+  background:#d4af37; color:#111;
+  border:none; border-radius:10px;
+  cursor:pointer; font-weight:700;
+  font-size:14px; margin-top:4px;
+">
           Confirmar y Convocar
         </button>
       </div>
@@ -792,6 +903,63 @@
     ">
         Entendido
       </button>
+    </div>
+  </div>
+  <div id="modalDetalleEvento" style="
+  display:none;
+  position:fixed;
+  top:0; left:0;
+  width:100%; height:100%;
+  background:rgba(0,0,0,0.6);
+  z-index:3200;
+  justify-content:center;
+  align-items:center;
+">
+    <div style="
+    background:white;
+    width:95%;
+    max-width:480px;
+    border-radius:14px;
+    padding:20px;
+    max-height:90vh;
+    overflow-y:auto;
+    box-shadow:0 10px 30px rgba(0,0,0,0.3);
+    position:relative;
+  ">
+      <button onclick="window.cerrarModalDetalle()" style="
+      position:absolute;
+      top:10px; right:12px;
+      background:none;
+      border:none;
+      font-size:22px;
+      cursor:pointer;
+      color:#666;
+    ">✕</button>
+
+      <div id="detalleContenido"></div>
+
+      <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:16px;">
+        <button id="detalleEditarBtn" style="
+        flex:1; padding:10px; background:#111;
+        color:#d4af37; border:none; border-radius:8px;
+        cursor:pointer; font-weight:600;
+      ">✏️ Editar</button>
+        <button id="detalleStaffBtn" style="
+        flex:1; padding:10px; background:#9b59b6;
+        color:white; border:none; border-radius:8px;
+        cursor:pointer; font-weight:600;
+      ">👥 Staff</button>
+        <button id="detalleChecklistBtn" style="
+        flex:1; padding:10px; background:#16a085;
+        color:white; border:none; border-radius:8px;
+        cursor:pointer; font-weight:600;
+      ">📦 Checklist</button>
+        <button id="detallePresupuestoBtn" style="
+        display:none; flex:1; padding:10px; background:#2980b9;
+        color:white; border:none; border-radius:8px;
+        cursor:pointer; font-weight:600;
+      ">📄 Presupuesto</button>
+      </div>
     </div>
   </div>
 </body>

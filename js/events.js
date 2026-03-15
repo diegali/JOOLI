@@ -144,6 +144,13 @@ function getFormData() {
     paid: document.getElementById("paid")?.value === "true",
     invoiceNumber: document.getElementById("invoiceNumber")?.value || "",
     notes: document.getElementById("notes")?.value || "",
+    alquileres: {
+      vajilla: document.getElementById("alqVajilla")?.checked || false,
+      manteleria: document.getElementById("alqManteleria")?.checked || false,
+      mobiliario: document.getElementById("alqMobiliario")?.checked || false,
+      mobiliarioTrabajo: document.getElementById("alqMobiliarioTrabajo")?.checked || false,
+      notas: document.getElementById("alqNotas")?.value || "",
+    },
     presupuestoURL: document.getElementById("presupuestoURL")?.value.trim() || "",
     staffAsignado: selectedStaff,
   };
@@ -274,6 +281,19 @@ export async function fillFormForEdit(evento, id) {
       el.value = evento[field] || (field === "invoiceType" ? "B/C" : "");
     }
   });
+
+  const alq = evento.alquileres || {};
+  const alqVajilla = document.getElementById("alqVajilla");
+  const alqManteleria = document.getElementById("alqManteleria");
+  const alqMobiliario = document.getElementById("alqMobiliario");
+  const alqMobiliarioTrabajo = document.getElementById("alqMobiliarioTrabajo");
+  const alqNotas = document.getElementById("alqNotas");
+
+  if (alqVajilla) alqVajilla.checked = alq.vajilla || false;
+  if (alqManteleria) alqManteleria.checked = alq.manteleria || false;
+  if (alqMobiliario) alqMobiliario.checked = alq.mobiliario || false;
+  if (alqMobiliarioTrabajo) alqMobiliarioTrabajo.checked = alq.mobiliarioTrabajo || false;
+  if (alqNotas) alqNotas.value = alq.notas || "";
 
   const paidEl = document.getElementById("paid");
   if (paidEl) {
@@ -678,9 +698,7 @@ function renderGroup(groups, sectionTitle, color) {
 function createCard(evento, id) {
   const today = new Date().toISOString().split("T")[0];
   const esHoy = evento.date === today;
-  const bordeEvento = esHoy
-    ? "4px solid #e74c3c"
-    : "4px solid transparent";
+  const bordeEvento = esHoy ? "4px solid #e74c3c" : "4px solid transparent";
 
   const colors = {
     Presupuestado: "#f1c40f",
@@ -702,119 +720,53 @@ function createCard(evento, id) {
     text-align:center;
   `;
 
-  const invoiceIndicator =
-    evento.invoiceType === "A"
-      ? `<span style="background:#34495e; color:white; padding:2px 6px; border-radius:4px; font-size:0.7em; margin-left:5px;">FACT A</span>`
-      : "";
+  const invoiceIndicator = evento.invoiceType === "A"
+    ? `<span style="background:#34495e; color:white; padding:2px 6px; border-radius:4px; font-size:0.7em; margin-left:5px;">FACT A</span>`
+    : "";
 
-  const staff = evento.mensajesEnviados || [];
-
-  const confirmados = staff.filter(
-    (m) => (typeof m === "object" ? m.estado : "pendiente") === "confirmado"
-  ).length;
-
-  const pendientes = staff.filter(
-    (m) => (typeof m === "object" ? m.estado : "pendiente") === "pendiente"
-  ).length;
-
-  const rechazados = staff.filter(
-    (m) => (typeof m === "object" ? m.estado : "pendiente") === "rechazado"
-  ).length;
-
-  const totalAsignados = confirmados + pendientes;
-  let colorStaff = "#c0392b"; // rojo
-
-  if (totalAsignados >= Number(evento.staffNecesario || 0) && totalAsignados > 0) {
-    colorStaff = "#27ae60"; // verde
-  } else if (totalAsignados > 0) {
-    colorStaff = "#f39c12"; // amarillo
-  }
-
-  const staffNecesario = Number(evento.staffNecesario || 0);
-  const faltanMozos = Math.max(staffNecesario - totalAsignados, 0);
-
-  let textoStaff = `👥 Staff: ${totalAsignados} / ${evento.staffNecesario || "-"}`;
-
-  if (staffNecesario > 0) {
-    if (totalAsignados === 0) {
-      textoStaff = `👥 Sin staff asignado`;
-    } else if (faltanMozos === 0) {
-      textoStaff = `👥 Staff completo ✔`;
-    } else if (faltanMozos === 1) {
-      textoStaff = `👥 Falta 1 mozo`;
-    } else {
-      textoStaff = `👥 Faltan ${faltanMozos} mozos`;
-    }
-  }
+  const alquileresTexto = evento.alquileres && Object.values(evento.alquileres).some(v => v === true)
+    ? [
+      evento.alquileres.vajilla ? "Vajilla" : null,
+      evento.alquileres.manteleria ? "Mantelería" : null,
+      evento.alquileres.mobiliario ? "Mobiliario" : null,
+      evento.alquileres.mobiliarioTrabajo ? "Mob. trabajo" : null,
+    ].filter(Boolean).join(" · ")
+    : null;
 
   return `
-    <div class="card" data-id="${id}" style="cursor:pointer; border:1px solid #ddd; border-left:${bordeEvento}; padding:12px; border-radius:8px; margin-bottom:10px; background:white;">    <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-    <div style="flex-grow:1;">
-    <small style="color:#555; font-weight:bold;">${formatDate(evento.date)}</small>${invoiceIndicator}<br>
-    <strong style="font-size:1.2em; color:#111;">${evento.client}</strong><br>
-
-            ${evento.paid ? `
-              <span style="
-                display:inline-block;
-                margin:4px 0 2px 0;
-                padding:3px 8px;
-                background:#27ae60;
-                color:white;
-                border-radius:6px;
-                font-size:0.72em;
-                font-weight:bold;
-              ">
-                💰 COBRADO
-              </span><br>
-            ` : ""}
-
-            <small style="color:#d4af37; font-weight:bold;">${evento.type}</small>
+    <div class="card" data-id="${id}" style="cursor:pointer; border:1px solid #ddd; border-left:${bordeEvento}; padding:12px; border-radius:8px; margin-bottom:10px; background:white;">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+        <div style="flex-grow:1;">
+          <small style="color:#555; font-weight:bold;">${formatDate(evento.date)}</small>${invoiceIndicator}<br>
+          <strong style="font-size:1.2em; color:#111;">${evento.client}</strong><br>
+          <small style="color:#d4af37; font-weight:bold;">${evento.type}</small>
         </div>
         <span style="${statusStyle}">${evento.status}</span>
       </div>
-
-      <div style="margin-top:10px; font-size:0.9em; color:#333; border-top:1px solid #eee; padding-top:5px;">
-       📍 ${evento.place} | 👥 ${evento.guests} pers. | 💰 $${Number(evento.total || 0).toLocaleString()}
-        ${evento.ultimoCambioPor ? `<br><span style="font-size:0.8em; color:#999;">✏️ Último cambio: ${evento.ultimoCambioPor}</span>` : ""}
-        <br>
-        🕒 Evento: ${evento.horaInicio || "-"} a ${evento.horaFin || "-"}
-        <br>
-        👔 Presentación: ${evento.horaPresentacion || "-"}
-        <br>
-        <span style="color:${colorStaff}; font-weight:bold;">
-${textoStaff}
-</span> · ✔ ${confirmados} · ⏳ ${pendientes} · ❌ ${rechazados}
-
-${evento.notes ? `
-  <br>
-  <span style="
-    display:block;
-    margin-top:6px;
-    font-size:0.82em;
-    color:#666;
-    font-style:italic;
-  ">📝 ${evento.notes.length > 80 ? evento.notes.substring(0, 80) + "..." : evento.notes}</span>
-` : ""}
-
-${evento.presupuestoURL ? `
-  <br>
-  <button
-    onclick="window.open('${evento.presupuestoURL}', '_blank'); event.stopPropagation();"
-    style="
-      margin-top:8px;
-      padding:8px 12px;
-      background:#2980b9;
-      color:white;
-      border:none;
-      border-radius:8px;
-      cursor:pointer;
-      font-size:0.9em;
-    "
-  >
-    📄 Presupuesto
-  </button>
-` : ""}
-
+      <div style="margin-top:8px; display:flex; flex-wrap:wrap; gap:6px; align-items:center;">
+        ${evento.paid ? `<span style="padding:3px 8px; background:#27ae60; color:white; border-radius:6px; font-size:0.72em; font-weight:bold;">💰 COBRADO</span>` : ""}
+        ${alquileresTexto ? `<span style="padding:3px 8px; background:#fdebd0; color:#e67e22; border-radius:6px; font-size:0.72em; font-weight:bold;">🪑 ${alquileresTexto}</span>` : ""}
+        ${evento.ultimoCambioPor ? `<span style="font-size:0.75em; color:#999;">✏️ ${evento.ultimoCambioPor}</span>` : ""}
+      </div>
+      <div style="margin-top:10px; display:flex; gap:8px; border-top:1px solid #f0ece3; padding-top:10px;">
+        <button
+          onclick="event.stopPropagation(); window.abrirModalGestionStaff('${id}');"
+          style="
+            flex:1; padding:7px; background:#9b59b6;
+            border:none; border-radius:8px;
+            font-size:12px; font-weight:600; color:white;
+            cursor:pointer;
+          "
+        >👥 Staff</button>
+        <button
+          onclick="event.stopPropagation(); window.abrirModalChecklist('${id}');"
+          style="
+            flex:1; padding:7px; background:#16a085;
+            border:none; border-radius:8px;
+            font-size:12px; font-weight:600; color:white;
+            cursor:pointer;
+          "
+        >📦 Checklist</button>
       </div>
     </div>
   `;
@@ -853,6 +805,106 @@ window.confirmarEliminarEvento = async function () {
     mostrarAvisoSimple("Error", "No se pudo eliminar el evento. Intentá de nuevo.", "❌");
   }
 };
+window.abrirModalDetalle = function (eventoId) {
+  const evento = window.allEventsData.find(ev => ev.id === eventoId);
+  if (!evento) return;
+
+  const colors = {
+    Presupuestado: "#f1c40f",
+    "Seña pagada": "#e67e22",
+    Confirmado: "#27ae60",
+    Realizado: "#2980b9",
+    Cancelado: "#c0392b",
+  };
+
+  const staff = evento.mensajesEnviados || [];
+  const confirmados = staff.filter(m => m.estado === "confirmado").length;
+  const pendientes = staff.filter(m => m.estado === "pendiente").length;
+  const rechazados = staff.filter(m => m.estado === "rechazado").length;
+  const totalAsignados = confirmados + pendientes;
+  const staffNecesario = Number(evento.staffNecesario || 0);
+  const faltanMozos = Math.max(staffNecesario - totalAsignados, 0);
+
+  let textoStaff = `Sin staff asignado`;
+  let colorStaff = "#c0392b";
+  if (totalAsignados > 0 && faltanMozos === 0) { textoStaff = `Staff completo ✔`; colorStaff = "#27ae60"; }
+  else if (totalAsignados > 0 && faltanMozos === 1) { textoStaff = `Falta 1 mozo`; colorStaff = "#f39c12"; }
+  else if (totalAsignados > 0) { textoStaff = `Faltan ${faltanMozos} mozos`; colorStaff = "#f39c12"; }
+
+  const contenido = document.getElementById("detalleContenido");
+  if (contenido) {
+    contenido.innerHTML = `
+      <div style="margin-bottom:12px; padding-right:30px;">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px;">
+          <div style="font-size:0.85em; color:#555; font-weight:bold;">${formatDate(evento.date)}</div>
+          <span style="
+            background:${colors[evento.status] || "#666"};
+            color:white; padding:4px 10px;
+            border-radius:12px; font-size:0.75em;
+            font-weight:bold; white-space:nowrap;
+          ">${evento.status}</span>
+        </div>
+        <div style="font-size:1.3em; font-weight:bold; color:#111;">${evento.client}</div>
+        <div style="font-size:0.85em; color:#d4af37; font-weight:bold;">${evento.type}</div>
+      </div>
+
+      <div style="font-size:0.9em; color:#333; line-height:2;">
+        📍 <strong>${evento.place || "-"}</strong><br>
+        👥 <strong>${evento.guests || "-"}</strong> personas<br>
+        🕒 Evento: <strong>${evento.horaInicio || "-"}</strong> a <strong>${evento.horaFin || "-"}</strong><br>
+        👔 Presentación: <strong>${evento.horaPresentacion || "-"}</strong><br>
+        💰 Total: <strong>$${Number(evento.total || 0).toLocaleString()}</strong>
+        ${evento.paid ? `<span style="background:#27ae60; color:white; padding:2px 8px; border-radius:6px; font-size:0.8em; margin-left:6px;">COBRADO</span>` : ""}<br>
+        💵 Seña: <strong>$${Number(evento.deposit || 0).toLocaleString()}</strong><br>
+        👥 <span style="color:${colorStaff}; font-weight:bold;">${textoStaff}</span>
+        <span style="color:#888;"> · ✔ ${confirmados} · ⏳ ${pendientes} · ❌ ${rechazados}</span>
+        ${evento.notes ? `<br>📝 <em style="color:#666;">${evento.notes}</em>` : ""}
+        ${evento.invoiceNumber ? `<br>🧾 Factura: <strong>${evento.invoiceType || ""} ${evento.invoiceNumber}</strong>` : ""}
+        ${evento.alquileres && Object.values(evento.alquileres).some(v => v === true) ? `
+          <br>🪑 <span style="color:#e67e22; font-weight:600;">Alquileres: ${[
+          evento.alquileres.vajilla ? "Vajilla" : null,
+          evento.alquileres.manteleria ? "Mantelería" : null,
+          evento.alquileres.mobiliario ? "Mobiliario" : null,
+          evento.alquileres.mobiliarioTrabajo ? "Mob. trabajo" : null,
+        ].filter(Boolean).join(" · ")}</span>
+          ${evento.alquileres.notas ? `<br><span style="font-size:0.9em; color:#888;">📋 ${evento.alquileres.notas}</span>` : ""}
+` : ""}
+      </div>
+    `;
+  }
+
+  const editarBtn = document.getElementById("detalleEditarBtn");
+  const staffBtn = document.getElementById("detalleStaffBtn");
+  const checklistBtn = document.getElementById("detalleChecklistBtn");
+  const presupuestoBtn = document.getElementById("detallePresupuestoBtn");
+
+  if (editarBtn) editarBtn.onclick = () => {
+    window.cerrarModalDetalle();
+    fillFormForEdit(evento, eventoId);
+  };
+  if (staffBtn) staffBtn.onclick = () => {
+    window.cerrarModalDetalle();
+    window.abrirModalGestionStaff(eventoId);
+  };
+  if (checklistBtn) checklistBtn.onclick = () => {
+    window.cerrarModalDetalle();
+    window.abrirModalChecklist(eventoId);
+  };
+  if (presupuestoBtn) {
+    if (evento.presupuestoURL) {
+      presupuestoBtn.style.display = "flex";
+      presupuestoBtn.onclick = () => window.open(evento.presupuestoURL, "_blank");
+    } else {
+      presupuestoBtn.style.display = "none";
+    }
+  }
+
+  document.getElementById("modalDetalleEvento").style.display = "flex";
+};
+
+window.cerrarModalDetalle = function () {
+  document.getElementById("modalDetalleEvento").style.display = "none";
+};
 
 // ===============================
 // INIT
@@ -889,7 +941,10 @@ export function initEvents() {
     resetForm();
 
     const form = document.getElementById("eventFormContainer");
-    if (form) form.style.display = "block";
+    if (form) {
+      form.style.display = "block";
+      form.scrollIntoView({ behavior: "smooth" });
+    }
   });
 
   document.getElementById("btnGestionarStaff")?.addEventListener("click", () => {
@@ -905,12 +960,7 @@ export function initEvents() {
     if (!card) return;
 
     const id = card.dataset.id;
-    const eventData = window.allEventsData.find((ev) => ev.id === id);
-
-    if (eventData) {
-      fillFormForEdit(eventData, id);
-      actualizarUIBudget(eventData);
-    }
+    if (id) window.abrirModalDetalle(id);
   });
 
   const btnCerrarAvisoSimple = document.getElementById("btnCerrarAvisoSimple");

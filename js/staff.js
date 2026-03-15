@@ -65,6 +65,29 @@ function ordenarStaff(lista) {
 }
 
 // ===============================
+// AVISO MODAL
+// ===============================
+window.mostrarAvisoStaff = function (titulo, mensaje, icono = "⚠️", mostrarBoton = true) {
+  const modal = document.getElementById("modalAvisoSimple");
+  const tituloEl = document.getElementById("modalAvisoTitulo");
+  const mensajeEl = document.getElementById("modalAvisoMensaje");
+  const iconoEl = document.getElementById("modalAvisoIcono");
+  const btnEntendido = document.getElementById("btnCerrarAvisoSimple");
+
+  if (!modal || !tituloEl || !mensajeEl || !iconoEl) return;
+
+  tituloEl.textContent = titulo;
+  mensajeEl.innerHTML = mensaje;
+  iconoEl.textContent = icono;
+
+  if (btnEntendido) {
+    btnEntendido.style.display = mostrarBoton ? "inline-block" : "none";
+  }
+
+  modal.style.display = "flex";
+};
+
+// ===============================
 // STAFF GENERAL (ABM)
 // ===============================
 export async function guardarMozo() {
@@ -77,7 +100,7 @@ export async function guardarMozo() {
   const telefono = telefonoInput.value.trim();
 
   if (!nombre || !telefono) {
-    alert("Completa todos los campos");
+    window.mostrarAvisoStaff("Faltan datos", "Completá el nombre y el teléfono.", "⚠️");
     return;
   }
 
@@ -96,8 +119,24 @@ export async function guardarMozo() {
 }
 
 window.borrarMozo = async function (id) {
-  if (!confirm("¿Seguro que querés eliminar a este mozo?")) return;
+  window.mostrarAvisoStaff(
+    "¿Eliminar mozo?",
+    "¿Seguro que querés eliminarlo del staff?<br><br>" +
+    `<button onclick="window.confirmarBorrarMozo('${id}')" style="` +
+    "padding:10px 20px; background:#c0392b; color:white; border:none; " +
+    "border-radius:8px; cursor:pointer; font-weight:600; margin-right:8px;" +
+    `">Sí, eliminar</button>` +
+    `<button onclick="document.getElementById('modalAvisoSimple').style.display='none'" style="` +
+    "padding:10px 20px; background:#95a5a6; color:white; border:none; " +
+    "border-radius:8px; cursor:pointer; font-weight:600;" +
+    `">Cancelar</button>`,
+    "🗑",
+    false
+  );
+};
 
+window.confirmarBorrarMozo = async function (id) {
+  document.getElementById("modalAvisoSimple").style.display = "none";
   try {
     await deleteDoc(doc(db, "staff", id));
   } catch (e) {
@@ -113,39 +152,44 @@ function renderStaffList(snapshot) {
 
   snapshot.forEach((docSnap) => {
     const mozo = docSnap.data();
+    const inicial = mozo.nombre ? mozo.nombre.charAt(0).toUpperCase() : "?";
 
     html += `
       <div style="
         display:flex;
-        justify-content:space-between;
         align-items:center;
-        background:#f8f9fa;
-        padding:8px;
-        margin-bottom:5px;
-        border-radius:5px;
-        font-size:0.9em;
+        padding:10px 12px;
+        border-radius:10px;
+        margin-bottom:6px;
+        background:#f9f7f2;
       ">
-        <div>
-          <strong>${escapeHtml(mozo.nombre)}</strong><br>
-          <small style="color:#666;">${escapeHtml(mozo.telefono)}</small>
+        <div style="
+          width:36px; height:36px; border-radius:50%;
+          background:#111; color:#d4af37;
+          display:flex; align-items:center; justify-content:center;
+          font-weight:700; font-size:14px; flex-shrink:0;
+        ">${inicial}</div>
+
+        <div style="flex:1; margin-left:10px;">
+          <div style="font-size:14px; font-weight:600; color:#111;">${escapeHtml(mozo.nombre)}</div>
+          <div style="font-size:12px; color:#888; margin-top:1px;">${escapeHtml(mozo.telefono)}</div>
         </div>
 
         <button
           onclick="borrarMozo('${docSnap.id}')"
           style="
-            background:none;
-            border:none;
-            color:#e74c3c;
-            cursor:pointer;
-            font-size:1.2em;
-          ">
-          🗑️
-        </button>
+            background:none; border:none; cursor:pointer;
+            color:#ccc; font-size:16px; padding:4px 6px;
+            border-radius:6px;
+          "
+          onmouseover="this.style.color='#e74c3c'; this.style.background='#fdecea';"
+          onmouseout="this.style.color='#ccc'; this.style.background='none';"
+        >🗑</button>
       </div>
     `;
   });
 
-  listaDiv.innerHTML = html;
+  listaDiv.innerHTML = html || "<p style='text-align:center; color:#888; font-size:14px;'>No hay staff cargado.</p>";
 }
 
 export function cargarListaStaff() {
@@ -240,7 +284,6 @@ export async function renderStaffSelection() {
 function hayCambiosSinGuardarEvento(evento) {
   const editEventId = window.editingId || "";
 
-  // Si no se está editando este evento, no bloquear
   if (!editEventId || editEventId !== evento.id) return false;
 
   const dateForm = document.getElementById("date")?.value || "";
@@ -256,22 +299,21 @@ function hayCambiosSinGuardarEvento(evento) {
   );
 }
 
-
 // ===============================
 // MODAL GESTIÓN DE STAFF EN EVENTO
 // ===============================
 window.abrirModalGestionStaff = async function (eventId) {
   const evento = window.allEventsData.find((e) => e.id === eventId);
   if (!evento) return;
+
   if (hayCambiosSinGuardarEvento(evento)) {
-    alert("Primero presioná 'Actualizar evento' para guardar los cambios antes de gestionar el staff.");
+    window.mostrarAvisoStaff("Atención", "Primero presioná 'Actualizar evento' para guardar los cambios antes de gestionar el staff.", "⚠️");
     return;
   }
 
   const inputHoraPresentacion = document.getElementById("horaPresentacionEvento");
 
   if (inputHoraPresentacion) {
-    // Si no hay horaPresentacion guardada pero sí hay horaInicio, calcular 2 horas antes
     if (!evento.horaPresentacion && evento.horaInicio) {
       const [h, m] = evento.horaInicio.split(":").map(Number);
       const totalMin = h * 60 + m - 120;
@@ -354,6 +396,7 @@ window.abrirModalGestionStaff = async function (eventId) {
       }
     }
   }
+
   const totalStaff = mensajes.length;
   const confirmados = mensajes.filter(
     (m) => obtenerEstadoStaff(m) === "confirmado"
@@ -361,22 +404,19 @@ window.abrirModalGestionStaff = async function (eventId) {
   const pendientes = mensajes.filter(
     (m) => obtenerEstadoStaff(m) === "pendiente"
   ).length;
-
   const rechazados = mensajes.filter(
     (m) => obtenerEstadoStaff(m) === "rechazado"
   ).length;
-
 
   const staffNecesario = Number(evento.staffNecesario || 0);
   const activos = confirmados + pendientes;
   const faltan = Math.max(staffNecesario - activos, 0);
 
-  let colorEstado = "#27ae60"; // verde
-
+  let colorEstado = "#27ae60";
   if (activos === 0) {
-    colorEstado = "#c0392b"; // rojo
+    colorEstado = "#c0392b";
   } else if (faltan > 0) {
-    colorEstado = "#f39c12"; // amarillo
+    colorEstado = "#f39c12";
   }
 
   if (resumen) {
@@ -409,45 +449,79 @@ window.abrirModalGestionStaff = async function (eventId) {
         const nombre = normalizarNombreStaff(m);
         const estado = obtenerEstadoStaff(m);
         const whatsappEnviado = obtenerWhatsappEnviado(m);
+        const inicial = nombre ? nombre.charAt(0).toUpperCase() : "?";
+
+        const avatarColors = {
+          confirmado: "background:#27ae60; color:white;",
+          rechazado: "background:#e74c3c; color:white;",
+          pendiente: "background:#111; color:#d4af37;",
+        };
+
+        const avatarStyle = avatarColors[estado] || avatarColors.pendiente;
+
+        const estadoTexto = {
+          confirmado: "Confirmado",
+          rechazado: "Rechazado",
+          pendiente: "Pendiente",
+        };
+
+        const estadoColor = {
+          confirmado: "#27ae60",
+          rechazado: "#e74c3c",
+          pendiente: "#888",
+        };
 
         return `
-          <div class="staff-item ${seleccionAbierta ? "staff-disabled" : ""}">
-            <div class="staff-info">
-              <button
-                class="staff-status-dot status-${estado}"
-                onclick="window.rotarEstado('${eventId}','${nombre}')"
-                ${seleccionAbierta ? "disabled" : ""}
-                title="${estado}"
-              >
-                ●
-              </button>
+          <div style="
+            display:flex; align-items:center;
+            padding:10px 12px; border-radius:10px;
+            margin-bottom:6px; background:#f9f7f2;
+            opacity:${seleccionAbierta ? "0.5" : "1"};
+            pointer-events:${seleccionAbierta ? "none" : "auto"};
+          ">
+            <button
+              onclick="window.rotarEstado('${eventId}','${nombre}')"
+              title="Cambiar estado"
+              style="
+                width:36px; height:36px; border-radius:50%;
+                ${avatarStyle}
+                border:none; cursor:pointer;
+                font-weight:700; font-size:14px; flex-shrink:0;
+                display:flex; align-items:center; justify-content:center;
+              "
+            >${inicial}</button>
 
-              <span class="staff-name">${escapeHtml(nombre)}</span>
+            <div style="flex:1; margin-left:10px;">
+              <div style="font-size:14px; font-weight:600; color:#111;">${escapeHtml(nombre)}</div>
+              <div style="font-size:11px; font-weight:600; color:${estadoColor[estado] || "#888"}; margin-top:1px;">
+                ${estadoTexto[estado] || "Pendiente"}
+              </div>
             </div>
 
-            <div class="staff-actions">
-
-              <button
-                class="btn-icon wa"
-                onclick="window.enviarWhatsApp('${eventId}','${nombre}')"
-                ${seleccionAbierta ? "disabled" : ""}
-                title="Enviar WhatsApp"
-              >
-                ${whatsappEnviado
-            ? '<i class="fa-solid fa-check"></i>'
-            : '<i class="fa-brands fa-whatsapp"></i>'
+            <button
+              onclick="window.enviarWhatsApp('${eventId}','${nombre}')"
+              title="Enviar WhatsApp"
+              style="
+                background:none; border:none; cursor:pointer;
+                padding:4px 6px; border-radius:6px; margin-right:4px;
+              "
+            >
+              ${whatsappEnviado
+            ? '<i class="fa-solid fa-check" style="color:#27ae60; font-size:16px;"></i>'
+            : '<i class="fa-brands fa-whatsapp" style="color:#25D366; font-size:20px;"></i>'
           }
-              </button>
+            </button>
 
-              <button
-                class="btn-icon danger"
-                onclick="window.quitarStaff('${eventId}','${nombre}')"
-                ${seleccionAbierta ? "disabled" : ""}
-                title="Quitar"
-              >
-                ✕
-              </button>
-            </div>
+            <button
+              onclick="window.quitarStaff('${eventId}','${nombre}')"
+              title="Quitar"
+              style="
+                background:none; border:none; cursor:pointer;
+                color:#ccc; font-size:16px; padding:4px 6px; border-radius:6px;
+              "
+              onmouseover="this.style.color='#e74c3c'; this.style.background='#fdecea';"
+              onmouseout="this.style.color='#ccc'; this.style.background='none';"
+            >🗑</button>
           </div>
         `;
       })
@@ -495,7 +569,7 @@ async function togglePanelSeleccionStaff() {
   ).length;
 
   if (totalStaffNecesario > 0 && totalStaffAsignado >= totalStaffNecesario) {
-    alert("El staff de este evento ya está completo.");
+    window.mostrarAvisoStaff("Staff completo", "El staff de este evento ya está completo.", "✅");
     return;
   }
 
@@ -525,7 +599,7 @@ async function togglePanelSeleccionStaff() {
     (panel.style.display === "none" || panel.style.display === "") &&
     staffDisponibles.length === 0
   ) {
-    alert("Todos los mozos ya fueron asignados a este evento.");
+    window.mostrarAvisoStaff("Sin disponibles", "Todos los mozos ya fueron asignados a este evento.", "ℹ️");
     return;
   }
 
@@ -534,7 +608,6 @@ async function togglePanelSeleccionStaff() {
     let hayDisponibles = false;
 
     staffDisponibles.forEach((data) => {
-
       if (!staffYaAsignado.includes(data.nombre)) {
         hayDisponibles = true;
 
@@ -542,22 +615,31 @@ async function togglePanelSeleccionStaff() {
           <label style="
             display:flex;
             align-items:center;
-            gap:15px;
-            padding:12px;
-            border-bottom:1px solid #f0f0f0;
+            gap:12px;
+            padding:10px 12px;
+            border-radius:10px;
+            margin-bottom:6px;
+            background:#f9f7f2;
             cursor:pointer;
-            transition:background 0.2s;
           ">
+            <div style="
+              width:36px; height:36px; border-radius:50%;
+              background:#111; color:#d4af37;
+              display:flex; align-items:center; justify-content:center;
+              font-weight:700; font-size:14px; flex-shrink:0;
+            ">${escapeHtml(data.nombre.charAt(0).toUpperCase())}</div>
+
+            <span style="flex:1; font-size:14px; font-weight:600; color:#111;">
+              ${escapeHtml(data.nombre)}
+            </span>
+
             <input
               type="checkbox"
               class="check-staff-asignar"
               data-nombre="${escapeHtml(data.nombre)}"
               data-tel="${escapeHtml(data.telefono)}"
-              style="width:18px; height:18px; cursor:pointer;"
+              style="width:18px; height:18px; cursor:pointer; flex-shrink:0; accent-color:#d4af37;"
             >
-            <span style="font-size:15px; font-weight:500; color:#444;">
-              ${escapeHtml(data.nombre)}
-            </span>
           </label>
         `;
       }
@@ -598,7 +680,7 @@ async function confirmarAsignacionStaff() {
 
   const checks = document.querySelectorAll(".check-staff-asignar:checked");
   if (checks.length === 0) {
-    alert("Seleccioná al menos a alguien.");
+    window.mostrarAvisoStaff("Atención", "Seleccioná al menos un mozo.", "⚠️");
     return;
   }
 
@@ -614,7 +696,6 @@ async function confirmarAsignacionStaff() {
   try {
     const evento = window.allEventsData.find((e) => e.id === eventId);
     const staffExistente = evento.mensajesEnviados || [];
-
     const staffFinal = [...staffExistente];
 
     nuevosAsignados.forEach((nuevo) => {
@@ -622,14 +703,15 @@ async function confirmarAsignacionStaff() {
         staffFinal.push(nuevo);
       }
     });
+
     const totalStaffNecesario = Number(evento.staffNecesario || 0);
     const totalStaffAsignado = staffFinal.filter(
       (s) => obtenerEstadoStaff(s) !== "rechazado"
     ).length;
     const staffCompleto =
       totalStaffNecesario > 0 && totalStaffAsignado >= totalStaffNecesario;
-    await updateDoc(eventoRef, { mensajesEnviados: staffFinal });
 
+    await updateDoc(eventoRef, { mensajesEnviados: staffFinal });
     evento.mensajesEnviados = staffFinal;
 
     if (panel) panel.style.display = "none";
@@ -656,25 +738,39 @@ async function confirmarAsignacionStaff() {
 // ACCIONES SOBRE STAFF DEL EVENTO
 // ===============================
 window.quitarStaff = async function (eventId, nombreMozo) {
-  if (!confirm(`¿Estás seguro de quitar a ${nombreMozo} del evento?`)) return;
+  window.mostrarAvisoStaff(
+    "¿Quitar del evento?",
+    `¿Seguro que querés quitar a <strong>${nombreMozo}</strong> de este evento?<br><br>` +
+    `<button onclick="window.confirmarQuitarStaff('${eventId}','${nombreMozo}')" style="` +
+    "padding:10px 20px; background:#c0392b; color:white; border:none; " +
+    "border-radius:8px; cursor:pointer; font-weight:600; margin-right:8px;" +
+    `">Sí, quitar</button>` +
+    `<button onclick="document.getElementById('modalAvisoSimple').style.display='none'" style="` +
+    "padding:10px 20px; background:#95a5a6; color:white; border:none; " +
+    "border-radius:8px; cursor:pointer; font-weight:600;" +
+    `">Cancelar</button>`,
+    "⚠️",
+    false
+  );
+};
+
+window.confirmarQuitarStaff = async function (eventId, nombreMozo) {
+  document.getElementById("modalAvisoSimple").style.display = "none";
 
   const eventoRef = doc(db, "events", eventId);
   const evento = window.allEventsData.find((e) => e.id === eventId);
-
   if (!evento) return;
 
   try {
     const nuevoStaff = (evento.mensajesEnviados || []).filter(
       (m) => normalizarNombreStaff(m) !== nombreMozo
     );
-
     await updateDoc(eventoRef, { mensajesEnviados: nuevoStaff });
-
     evento.mensajesEnviados = nuevoStaff;
     window.abrirModalGestionStaff(eventId);
   } catch (e) {
     console.error("Error al quitar al staff:", e);
-    alert("No se pudo quitar al mozo. Intenta de nuevo.");
+    window.mostrarAvisoStaff("Error", "No se pudo quitar al mozo. Intentá de nuevo.", "❌");
   }
 };
 
@@ -690,7 +786,7 @@ window.enviarWhatsApp = async function (eventId, nombreMozo) {
 
   const telefono = obtenerTelefonoStaff(mozo);
   if (!telefono) {
-    alert("Este staff no tiene teléfono cargado.");
+    window.mostrarAvisoStaff("Sin teléfono", "Este staff no tiene teléfono cargado.", "⚠️");
     return;
   }
 
@@ -700,21 +796,23 @@ window.enviarWhatsApp = async function (eventId, nombreMozo) {
   const mensaje =
     `Hola ${normalizarNombreStaff(mozo)}!
 
-  Te escribo de JOOLI para consultarte si podés trabajar en el siguiente evento:
+Te contactamos de JOOLI Catering para consultarte si podés trabajar en el siguiente evento:
 
-  📅 Fecha: ${fechaEvento}
-  📍 Lugar: ${evento.place || "-"}
+📅 Fecha: ${fechaEvento}
+🍽 Tipo: ${evento.type || "-"}
+📍 Lugar: ${evento.place || "-"}
+👥 Invitados: ${evento.guests || "-"} personas
 
-  🕒 Presentación: ${evento.horaPresentacion || "-"}
-  🏁 Fin estimado: ${evento.horaFin || "-"}
+🕒 Presentación: ${evento.horaPresentacion || "-"}
+🏁 Fin: ${evento.horaFin || "-"}
 
-  ¿Estás disponible?
+¿Estás disponible?
 
-  Por favor respondé:
-  ✅ CONFIRMO
-  ❌ NO PUEDO
+Por favor respondé:
+✅ CONFIRMO
+❌ NO PUEDO
 
-  ¡Gracias!`;
+¡Gracias!`;
 
   const url = `https://wa.me/${telefono}?text=${encodeURIComponent(mensaje)}`;
   window.open(url, "_blank");
@@ -735,7 +833,6 @@ window.enviarWhatsApp = async function (eventId, nombreMozo) {
     console.error("Error actualizando envío de WhatsApp:", e);
   }
 };
-
 
 window.rotarEstado = async function (eventId, mozoNombre) {
   const evento = window.allEventsData.find((e) => e.id === eventId);
@@ -774,6 +871,24 @@ window.rotarEstado = async function (eventId, mozoNombre) {
   } catch (e) {
     console.error("Error al actualizar estado:", e);
   }
+};
+
+window.cargarListaStaffSeccion = function () {
+  const listaDiv = document.getElementById("listaStaff");
+  if (!listaDiv) return;
+
+  if (unsubscribeListaStaff) unsubscribeListaStaff();
+
+  const q = query(collection(db, "staff"), orderBy("nombre", "asc"));
+
+  unsubscribeListaStaff = onSnapshot(q, (snapshot) => {
+    staffCache = snapshot.docs.map((docSnap) => ({
+      id: docSnap.id,
+      ...docSnap.data(),
+    }));
+
+    renderStaffList(snapshot);
+  });
 };
 
 // ===============================

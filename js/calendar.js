@@ -9,21 +9,10 @@ import {
 
 let calendar;
 
-// --- FUNCIÓN GLOBAL PARA EDITAR DESDE EL RESUMEN ---
 window.editFromSummary = function (id) {
-  // Buscamos la data del evento en el array global
-  const eventData = window.allEventsData.find((ev) => ev.id === id);
-  if (eventData) {
-    fillFormForEdit(eventData, id);
-    // Ocultamos el resumen después de seleccionar para que no estorbe la edición
-    const summaryEl = document.getElementById("daySummary");
-    if (summaryEl) summaryEl.style.display = "none";
-
-    // Scroll al formulario
-    document
-      .getElementById("eventFormContainer")
-      ?.scrollIntoView({ behavior: "smooth" });
-  }
+  const summaryEl = document.getElementById("daySummary");
+  if (summaryEl) summaryEl.style.display = "none";
+  window.abrirModalDetalle(id);
 };
 
 export function initCalendar() {
@@ -109,7 +98,7 @@ export function initCalendar() {
     },
 
     eventClick: function (info) {
-      fillFormForEdit(info.event.extendedProps, info.event.id);
+      window.abrirModalDetalle(info.event.id);
     },
 
     eventDisplay: "block",
