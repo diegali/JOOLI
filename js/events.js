@@ -144,6 +144,7 @@ function getFormData() {
     paid: document.getElementById("paid")?.value === "true",
     invoiceNumber: document.getElementById("invoiceNumber")?.value || "",
     notes: document.getElementById("notes")?.value || "",
+    placeUrl: document.getElementById("placeUrl")?.value || "",
     alquileres: {
       vajilla: document.getElementById("alqVajilla")?.checked || false,
       manteleria: document.getElementById("alqManteleria")?.checked || false,
@@ -273,6 +274,7 @@ export async function fillFormForEdit(evento, id) {
     "invoiceNumber",
     "notes",
     "invoiceType",
+    "placeUrl",
   ];
 
   fields.forEach((field) => {
@@ -354,6 +356,92 @@ export async function fillFormForEdit(evento, id) {
 
 
 }
+
+// ===============================
+// GOOGLE MAPS
+// ===============================
+
+window.abrirModalMaps = async function () {
+  const modal = document.getElementById("modalMaps");
+  if (!modal) return;
+  modal.style.display = "flex";
+
+  const { Map } = await google.maps.importLibrary("maps");
+  const { AdvancedMarkerElement } = await google.maps.importLibrary("marker");
+  const { PlaceAutocompleteElement, Place } = await google.maps.importLibrary("places");
+
+  // Reiniciar siempre al abrir
+  window._selectedPlace = null;
+  document.getElementById("mapPlaceInfo").textContent = "";
+
+  const map = new Map(document.getElementById("mapContainer"), {
+    center: { lat: -31.4135, lng: -64.1811 },
+    zoom: 13,
+    mapId: "JOOLI_MAP",
+  });
+  window._mapInstance = map;
+
+  const marker = new AdvancedMarkerElement({ map });
+
+  // Reemplazar el contenedor del buscador
+  const searchContainer = document.getElementById("mapsSearchContainer");
+  searchContainer.innerHTML = "";
+
+  const autocomplete = new PlaceAutocompleteElement({
+    componentRestrictions: { country: "ar" },
+  });
+  autocomplete.style.width = "100%";
+  autocomplete.style.marginBottom = "12px";
+  searchContainer.appendChild(autocomplete);
+
+  autocomplete.addEventListener("gmp-select", async (e) => {
+    const place = new Place({ id: e.placePrediction.placeId });
+
+    await place.fetchFields({
+      fields: ["displayName", "formattedAddress", "location", "googleMapsURI"],
+    });
+
+    const location = place.location;
+    map.setCenter(location);
+    map.setZoom(16);
+    marker.position = location;
+
+    window._selectedPlace = {
+      nombre: place.displayName,
+      direccion: place.formattedAddress,
+      url: place.googleMapsURI,
+    };
+
+    document.getElementById("mapPlaceInfo").textContent =
+      `📍 ${place.displayName} — ${place.formattedAddress}`;
+  });
+};
+window.cerrarModalMaps = function () {
+  document.getElementById("modalMaps").style.display = "none";
+};
+
+window.confirmarUbicacion = function () {
+  const place = window._selectedPlace;
+  if (!place) {
+    window.mostrarAvisoSimple("Sin selección", "Buscá y seleccioná un lugar primero.", "⚠️");
+    return;
+  }
+
+  const placeInput = document.getElementById("place");
+  if (placeInput) placeInput.value = place.nombre || place.direccion;
+
+  // Guardamos el URL en un campo oculto
+  let hidden = document.getElementById("placeUrl");
+  if (!hidden) {
+    hidden = document.createElement("input");
+    hidden.type = "hidden";
+    hidden.id = "placeUrl";
+    document.body.appendChild(hidden);
+  }
+  hidden.value = place.url || "";
+
+  window.cerrarModalMaps();
+};
 
 // ===============================
 // PRESUPUESTO
@@ -547,7 +635,7 @@ function cerrarModalConfirmarRealizacion() {
   modalConfirmacionAbierto = false;
 }
 
-function mostrarAvisoSimple(titulo, mensaje, icono = "⚠️", mostrarBotonEntendido = true) {
+window.mostrarAvisoSimple = function (titulo, mensaje, icono = "⚠️", mostrarBotonEntendido = true) {
   const modal = document.getElementById("modalAvisoSimple");
   const tituloEl = document.getElementById("modalAvisoTitulo");
   const mensajeEl = document.getElementById("modalAvisoMensaje");
@@ -936,7 +1024,7 @@ export function initEvents() {
   });
   document.getElementById("addBtn")?.addEventListener("click", saveEvent);
   document.getElementById("updateBtn")?.addEventListener("click", updateExistingEvent);
-
+  document.getElementById("btnUbicar")?.addEventListener("click", window.abrirModalMaps);
   document.getElementById("showFormBtn")?.addEventListener("click", () => {
     resetForm();
 

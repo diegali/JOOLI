@@ -1,292 +1,421 @@
 import { db } from "./auth.js";
 import {
-    doc,
-    updateDoc,
+  doc,
+  updateDoc,
+  collection,
+  addDoc,
+  deleteDoc,
+  onSnapshot,
+  query,
+  orderBy,
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-const ITEMS_BASE = {
-    VAJILLA: ["Copas", "Platos", "Bandejas"],
-    LIMPIEZA: ["Repasadores", "Alcohol"],
-    DESCARTABLES: ["Bandejas telgopor", "Cazuelas"],
-    BEBIDAS: ["Agua", "Gaseosa"],
-    INDUMENTARIA: ["Remeras", "Delantales"],
-};
+let catalogoBase = [];
+let pestanaActiva = "checklist"; // "checklist" | "catalogo"
 
-export function initLista() { }
-
-function renderChecklistActual(evento) {
-    const cont = document.getElementById("checklistEventoActual");
-    if (!cont) return;
-
-    if (!evento.checklist || evento.checklist.length === 0) {
-        cont.innerHTML = "<p style='color:#888'>No hay ítems agregados.</p>";
-        return;
-    }
-
-    const totalItems = evento.checklist.length;
-    const preparados = evento.checklist.filter(item => item.preparado).length;
-    const porcentaje = totalItems > 0 ? Math.round((preparados / totalItems) * 100) : 0;
-
-    // Agrupar por categoría
-    const grupos = {};
-
-    evento.checklist.forEach((item) => {
-        const categoria = item.categoria || "OTROS";
-
-        if (!grupos[categoria]) {
-            grupos[categoria] = [];
-        }
-
-        grupos[categoria].push(item);
-    });
-
-    let html = `
-  <div style="margin-bottom:15px;">
-    <div style="
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      margin-bottom:6px;
-      font-size:14px;
-      font-weight:600;
-      color:#444;
-    ">
-      <span>📦 Preparado: ${preparados} / ${totalItems}</span>
-      <span>${porcentaje}%</span>
-    </div>
-
-    <div style="
-      width:100%;
-      height:10px;
-      background:#e9e9e9;
-      border-radius:999px;
-      overflow:hidden;
-    ">
-      <div style="
-        width:${porcentaje}%;
-        height:100%;
-        background:#4caf50;
-        border-radius:999px;
-        transition:width 0.2s ease;
-      "></div>
-    </div>
-  </div>
-`;
-
-    Object.entries(grupos).forEach(([categoria, items]) => {
-        html += `
-      <div style="margin-top:15px;">
-        <div style="
-          font-weight:600;
-          font-size:14px;
-          margin-bottom:6px;
-          color:#555;
-        ">
-          ${categoria}
-        </div>
-    `;
-
-        items.forEach((item) => {
-            const index = evento.checklist.indexOf(item);
-
-            html += `
-        <div style="
-          display:flex;
-          align-items:center;
-          gap:10px;
-          padding:8px;
-          border-bottom:1px solid #eee;
-        ">
-
-          <input
-            type="checkbox"
-            ${item.preparado ? "checked" : ""}
-            onchange="window.toggleChecklistItem(${index})"
-            style="width:18px;height:18px;"
-          >
-
-          <span
-            onclick="window.toggleChecklistItem(${index})"
-            style="
-                flex:1;
-                cursor:pointer;
-                user-select:none;
-                text-decoration: ${item.preparado ? "line-through" : "none"};
-                opacity: ${item.preparado ? "0.6" : "1"};
-                transition: all 0.2s ease;
-            "
-            >
-            ${item.nombre}
-        </span>
-        
-          <input
-            type="number"
-            value="${item.cantidad}"
-            min="1"
-            style="width:55px;height:30px;text-align:center;"
-            onchange="window.cambiarCantidadChecklist(${index}, this.value)"
-          >
-
-          <button
-    type="button"
-    onclick="window.eliminarChecklistItem(${index})"
-    style="
-      height:32px;
-      padding:0 10px;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-    "
-  >
-    ✕
-  </button>
-
-        </div>
-      `;
-        });
-
-        html += `</div>`;
-    });
-
-    cont.innerHTML = html;
+// ===============================
+// INIT
+// ===============================
+export function initLista() {
+  cargarCatalogo();
 }
 
-async function guardarChecklistEnFirestore(evento) {
-    if (!evento?.id) return;
-
-    try {
-        await updateDoc(doc(db, "events", evento.id), {
-            checklist: evento.checklist || [],
-        });
-
-        const index = window.allEventsData.findIndex((e) => e.id === evento.id);
-        if (index !== -1) {
-            window.allEventsData[index].checklist = [...(evento.checklist || [])];
-        }
-    } catch (error) {
-        console.error("Error al guardar checklist:", error);
-    }
-}
-
-window.abrirModalChecklist = function (eventId) {
-    const evento = window.allEventsData.find((e) => e.id === eventId);
-    if (!evento) return;
-
+function cargarCatalogo() {
+  const q = query(
+    collection(db, "catalogoChecklist"),
+    orderBy("categoria"),
+    orderBy("nombre")
+  );
+  onSnapshot(q, (snap) => {
+    catalogoBase = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    // Si el modal está abierto, refrescar la pestaña activa
     const modal = document.getElementById("modalChecklist");
-    const titulo = document.getElementById("tituloModalChecklist");
-    const resumen = document.getElementById("resumenChecklistEvento");
-    const contenido = document.getElementById("contenidoChecklistEvento");
+    if (modal && modal.style.display === "flex") {
+      if (pestanaActiva === "catalogo") {
+        renderPestanaCatalogo();
+      } else {
+        renderPestanaChecklist();
+      }
+    }
+  });
+}
 
-    if (!modal || !titulo || !resumen || !contenido) return;
+// ===============================
+// ABRIR / CERRAR MODAL
+// ===============================
+window.abrirModalChecklist = function (eventId) {
+  const evento = window.allEventsData.find((e) => e.id === eventId);
+  if (!evento) return;
 
-    const fechaEvento = evento.date
-        ? new Date(evento.date + "T00:00:00").toLocaleDateString("es-AR")
-        : "";
+  if (!evento.checklist) evento.checklist = [];
+  window.eventoChecklistActual = evento;
+  pestanaActiva = "checklist";
 
-    titulo.innerText = `📦 Checklist · ${fechaEvento} · ${evento.client}`;
-    resumen.innerText = "Seleccioná los items necesarios para este evento";
+  const titulo = document.getElementById("tituloModalChecklist");
+  if (titulo) {
+    const fecha = evento.date
+      ? new Date(evento.date + "T00:00:00").toLocaleDateString("es-AR")
+      : "";
+    titulo.innerText = `📦 ${fecha} · ${evento.client}`;
+  }
 
-    if (!evento.checklist) evento.checklist = [];
-    window.eventoChecklistActual = evento;
-
-    renderChecklistActual(evento);
-
-    let html = "";
-
-    Object.entries(ITEMS_BASE).forEach(([categoria, items]) => {
-        html += `
-      <div style="margin-bottom:20px;">
-        <h4 style="margin:0 0 10px 0; color:#16a085;">${categoria}</h4>
-        ${items
-                .map(
-                    (item) => `
-              <div style="
-                display:flex;
-                justify-content:space-between;
-                align-items:center;
-                padding:10px;
-                border:1px solid #eee;
-                border-radius:8px;
-                margin-bottom:8px;
-              ">
-                <span>${item}</span>
-                <button
-                  type="button"
-                  onclick="window.agregarChecklistItem('${item}', '${categoria}')"
-                  style="
-                    background:#16a085;
-                    color:white;
-                    border:none;
-                    border-radius:6px;
-                    padding:6px 10px;
-                    cursor:pointer;
-                  "
-                >
-                  Agregar
-                </button>
-              </div>
-            `
-                )
-                .join("")}
-      </div>
-    `;
-    });
-
-    contenido.innerHTML = html;
-    modal.style.display = "flex";
+  actualizarPestanas();
+  document.getElementById("modalChecklist").style.display = "flex";
 };
 
 window.cerrarModalChecklist = function () {
-    const modal = document.getElementById("modalChecklist");
-    if (modal) modal.style.display = "none";
+  const modal = document.getElementById("modalChecklist");
+  if (modal) modal.style.display = "none";
+  window.eventoChecklistActual = null;
 };
 
-window.agregarChecklistItem = async function (nombre, categoria) {
-    const evento = window.eventoChecklistActual;
-    if (!evento) return;
+// ===============================
+// NAVEGACIÓN DE PESTAÑAS
+// ===============================
+window.cambiarPestanaChecklist = function (cual) {
+  pestanaActiva = cual;
+  actualizarPestanas();
+};
 
-    if (!evento.checklist) evento.checklist = [];
+function actualizarPestanas() {
+  const btnChecklist = document.getElementById("tabBtnChecklist");
+  const btnCatalogo = document.getElementById("tabBtnCatalogo");
 
-    const yaExiste = evento.checklist.some((i) => i.nombre === nombre);
-    if (yaExiste) return;
+  if (btnChecklist) btnChecklist.classList.toggle("tab-btn--active", pestanaActiva === "checklist");
+  if (btnCatalogo) btnCatalogo.classList.toggle("tab-btn--active", pestanaActiva === "catalogo");
 
-    evento.checklist.push({
-        nombre,
-        categoria,
-        cantidad: 1,
-        preparado: false,
+  if (pestanaActiva === "checklist") {
+    renderPestanaChecklist();
+  } else {
+    renderPestanaCatalogo();
+  }
+}
+
+// ===============================
+// PESTAÑA 1 — CHECKLIST DEL EVENTO
+// ===============================
+function renderPestanaChecklist() {
+  const cont = document.getElementById("checklistContenido");
+  if (!cont) return;
+
+  const evento = window.eventoChecklistActual;
+  if (!evento) return;
+
+  const checklist = evento.checklist || [];
+
+  // ---- Barra de progreso ----
+  const total = checklist.length;
+  const preparados = checklist.filter((i) => i.preparado).length;
+  const porcentaje = total > 0 ? Math.round((preparados / total) * 100) : 0;
+
+  let html = `
+    <div class="checklist-progreso">
+      <div class="checklist-progreso-texto">
+        <span>📦 Preparado: ${preparados} / ${total}</span>
+        <span>${porcentaje}%</span>
+      </div>
+      <div class="checklist-progreso-barra">
+        <div class="checklist-progreso-fill" style="width:${porcentaje}%"></div>
+      </div>
+    </div>
+  `;
+
+  // ---- Lista de ítems del evento ----
+  if (total === 0) {
+    html += `<p class="checklist-vacio">No hay ítems en este checklist todavía.<br>Agregá desde el catálogo 👇</p>`;
+  } else {
+    const grupos = {};
+    checklist.forEach((item) => {
+      const cat = item.categoria || "OTROS";
+      if (!grupos[cat]) grupos[cat] = [];
+      grupos[cat].push(item);
     });
 
-    await guardarChecklistEnFirestore(evento);
-    renderChecklistActual(evento);
+    Object.entries(grupos).forEach(([categoria, items]) => {
+      html += `<div class="checklist-grupo">
+        <div class="checklist-categoria">${categoria}</div>`;
+
+      items.forEach((item) => {
+        const index = checklist.indexOf(item);
+        html += `
+          <div class="checklist-item ${item.preparado ? "checklist-item--listo" : ""}">
+            <input type="checkbox" class="checklist-check" ${item.preparado ? "checked" : ""}
+              onchange="window.toggleChecklistItem(${index})">
+            <span class="checklist-nombre" onclick="window.toggleChecklistItem(${index})">
+              ${item.nombre}
+            </span>
+            <input type="number" class="checklist-cantidad" value="${item.cantidad}" min="1"
+              onchange="window.cambiarCantidadChecklist(${index}, this.value)">
+            <button type="button" class="checklist-btn-quitar"
+              onclick="window.eliminarChecklistItem(${index})">✕</button>
+          </div>`;
+      });
+
+      html += `</div>`;
+    });
+  }
+
+  // ---- Catálogo para agregar ítems ----
+  // ---- Catálogo para agregar ítems ----
+  html += `
+  <div class="checklist-agregar-titulo">➕ Agregar del catálogo</div>
+  <div class="catalogo-buscar">
+    <input type="text" id="buscarCatalogo" placeholder="🔍 Buscar ítem..."
+      class="catalogo-buscar-input" oninput="window.filtrarCatalogo()">
+  </div>
+`;
+
+  if (catalogoBase.length === 0) {
+    html += `<p class="checklist-vacio">El catálogo está vacío. Añadí ítems desde la pestaña <strong>Catálogo base</strong>.</p>`;
+  } else {
+    const grupos = {};
+    catalogoBase.forEach((item) => {
+      if (!grupos[item.categoria]) grupos[item.categoria] = [];
+      grupos[item.categoria].push(item);
+    });
+
+    Object.entries(grupos).forEach(([categoria, items]) => {
+      html += `<div class="catalogo-grupo">
+        <div class="catalogo-categoria">${categoria}</div>`;
+
+      items.forEach((item) => {
+        const yaAgregado = checklist.some((i) => i.nombre === item.nombre);
+        html += `
+          <div class="catalogo-item ${yaAgregado ? "catalogo-item--agregado" : ""}">
+            <span class="catalogo-item-nombre">${item.nombre}</span>
+            <button type="button"
+              class="btn-agregar-item ${yaAgregado ? "btn-agregar-item--ya" : ""}"
+              onclick="window.agregarChecklistItem('${item.nombre}', '${item.categoria}')"
+              ${yaAgregado ? "disabled" : ""}>
+              ${yaAgregado ? "✔ Agregado" : "Agregar"}
+            </button>
+          </div>`;
+      });
+
+      html += `</div>`;
+    });
+  }
+
+  cont.innerHTML = html;
+}
+
+window.filtrarCatalogo = function () {
+  const term = document.getElementById("buscarCatalogo")?.value.toLowerCase() || "";
+  document.querySelectorAll(".catalogo-grupo").forEach((grupo) => {
+    let hayVisibles = false;
+    grupo.querySelectorAll(".catalogo-item").forEach((el) => {
+      const nombre = el.querySelector(".catalogo-item-nombre")?.textContent.toLowerCase() || "";
+      const visible = nombre.includes(term);
+      el.style.display = visible ? "" : "none";
+      if (visible) hayVisibles = true;
+    });
+    grupo.style.display = hayVisibles ? "" : "none";
+  });
+};
+
+// ===============================
+// PESTAÑA 2 — CATÁLOGO BASE
+// ===============================
+function renderPestanaCatalogo() {
+  const cont = document.getElementById("checklistContenido");
+  if (!cont) return;
+
+  const categoriasExistentes = [...new Set(catalogoBase.map((i) => i.categoria))].sort();
+
+  const opcionesSelect = categoriasExistentes
+    .map((c) => `<option value="${c}">${c}</option>`)
+    .join("");
+
+  let html = `
+    <div class="catalogo-buscar">
+      <input type="text" id="buscarCatalogo" placeholder="🔍 Buscar ítem..."
+        class="catalogo-buscar-input" oninput="window.filtrarCatalogo()">
+    </div>
+    <div class="catalogo-nuevo">
+      <div class="catalogo-nuevo-titulo">Nuevo ítem</div>
+      <div class="catalogo-nuevo-fila">
+        <input type="text" id="nuevoItemNombre" placeholder="Nombre del ítem"
+          class="catalogo-nuevo-input catalogo-nuevo-input--nombre">
+
+        <select id="selectCategoria" class="catalogo-nuevo-input catalogo-nuevo-input--cat"
+          onchange="window.onCategoriaChange()">
+          ${categoriasExistentes.length > 0
+      ? `<option value="">-- Elegir categoría --</option>${opcionesSelect}`
+      : `<option value="">-- Sin categorías aún --</option>`
+    }
+          <option value="__nueva__">➕ Nueva categoría...</option>
+        </select>
+
+        <input type="text" id="nuevoItemCategoria" placeholder="Nombre de la nueva categoría"
+          class="catalogo-nuevo-input catalogo-nuevo-input--cat catalogo-nueva-cat-input">
+
+        <button type="button" onclick="window.agregarAlCatalogo()"
+          class="btn-catalogo-agregar">+ Agregar</button>
+      </div>
+    </div>
+  `;
+
+  if (catalogoBase.length === 0) {
+    html += `<p class="checklist-vacio">El catálogo está vacío. ¡Agregá el primer ítem!</p>`;
+  } else {
+    const grupos = {};
+    catalogoBase.forEach((item) => {
+      if (!grupos[item.categoria]) grupos[item.categoria] = [];
+      grupos[item.categoria].push(item);
+    });
+
+    Object.entries(grupos).forEach(([categoria, items]) => {
+      html += `<div class="catalogo-grupo">
+        <div class="catalogo-categoria">${categoria}</div>`;
+
+      items.forEach((item) => {
+        html += `
+          <div class="catalogo-item">
+            <span class="catalogo-item-nombre">${item.nombre}</span>
+            <button type="button" class="btn-catalogo-eliminar"
+              onclick="window.eliminarDelCatalogo('${item.id}')">🗑</button>
+          </div>`;
+      });
+
+      html += `</div>`;
+    });
+  }
+
+  cont.innerHTML = html;
+}
+
+// ===============================
+// ACCIONES — CATÁLOGO BASE
+// ===============================
+window.agregarAlCatalogo = async function () {
+  const nombreEl = document.getElementById("nuevoItemNombre");
+  const selectEl = document.getElementById("selectCategoria");
+  const nuevaCatEl = document.getElementById("nuevoItemCategoria");
+
+  const nombre = nombreEl?.value.trim().toUpperCase();
+
+  let categoria;
+  if (selectEl?.value === "__nueva__") {
+    categoria = nuevaCatEl?.value.trim().toUpperCase();
+    if (!categoria) {
+      window.mostrarAvisoSimple("Faltan datos", "Escribí el nombre de la nueva categoría.", "⚠️");
+      return;
+    }
+  } else {
+    categoria = selectEl?.value;
+    if (!categoria) {
+      window.mostrarAvisoSimple("Faltan datos", "Elegí o creá una categoría.", "⚠️");
+      return;
+    }
+  }
+
+  if (!nombre) {
+    window.mostrarAvisoSimple("Faltan datos", "Escribí el nombre del ítem.", "⚠️");
+    return;
+  }
+
+  const yaExiste = catalogoBase.some(
+    (i) => i.nombre.toLowerCase() === nombre.toLowerCase()
+  );
+  if (yaExiste) {
+    window.mostrarAvisoSimple("Ítem duplicado", `<strong>${nombre}</strong> ya existe en el catálogo.`, "⚠️");
+    return;
+  }
+
+  try {
+    await addDoc(collection(db, "catalogoChecklist"), { nombre, categoria });
+    if (nombreEl) nombreEl.value = "";
+    if (nuevaCatEl) nuevaCatEl.value = "";
+    if (selectEl) selectEl.value = "";
+  } catch (e) {
+    console.error("Error al agregar al catálogo:", e);
+  }
+};
+
+window.onCategoriaChange = function () {
+  const selectEl = document.getElementById("selectCategoria");
+  const nuevaCatEl = document.getElementById("nuevoItemCategoria");
+  if (!nuevaCatEl) return;
+  nuevaCatEl.style.display = selectEl?.value === "__nueva__" ? "block" : "none";
+};
+
+window.eliminarDelCatalogo = async function (itemId) {
+  if (!confirm("¿Eliminar este ítem del catálogo?")) return;
+  try {
+    await deleteDoc(doc(db, "catalogoChecklist", itemId));
+  } catch (e) {
+    console.error("Error al eliminar del catálogo:", e);
+  }
+};
+
+window.filtrarCatalogo = function () {
+  const term = document.getElementById("buscarCatalogo")?.value.toLowerCase() || "";
+  document.querySelectorAll(".catalogo-item").forEach((el) => {
+    const nombre = el.querySelector(".catalogo-item-nombre")?.textContent.toLowerCase() || "";
+    el.style.display = nombre.includes(term) ? "" : "none";
+  });
+  document.querySelectorAll(".catalogo-grupo").forEach((grupo) => {
+    const hayVisibles = [...grupo.querySelectorAll(".catalogo-item")]
+      .some((el) => el.style.display !== "none");
+    grupo.style.display = hayVisibles ? "" : "none";
+  });
+};
+
+// ===============================
+// ACCIONES — CHECKLIST DEL EVENTO
+// ===============================
+window.agregarChecklistItem = async function (nombre, categoria) {
+  const evento = window.eventoChecklistActual;
+  if (!evento) return;
+  if (!evento.checklist) evento.checklist = [];
+
+  if (evento.checklist.some((i) => i.nombre === nombre)) return;
+
+  evento.checklist.push({ nombre, categoria, cantidad: 1, preparado: false });
+  await guardarChecklistEnFirestore(evento);
+  renderPestanaChecklist();
 };
 
 window.toggleChecklistItem = async function (index) {
-    const evento = window.eventoChecklistActual;
-    if (!evento || !evento.checklist?.[index]) return;
+  const evento = window.eventoChecklistActual;
+  if (!evento || !evento.checklist?.[index]) return;
 
-    evento.checklist[index].preparado = !evento.checklist[index].preparado;
-
-    await guardarChecklistEnFirestore(evento);
-    renderChecklistActual(evento);
+  evento.checklist[index].preparado = !evento.checklist[index].preparado;
+  await guardarChecklistEnFirestore(evento);
+  renderPestanaChecklist();
 };
 
 window.cambiarCantidadChecklist = async function (index, valor) {
-    const evento = window.eventoChecklistActual;
-    if (!evento || !evento.checklist?.[index]) return;
+  const evento = window.eventoChecklistActual;
+  if (!evento || !evento.checklist?.[index]) return;
 
-    evento.checklist[index].cantidad = Number(valor) || 1;
-
-    await guardarChecklistEnFirestore(evento);
-    renderChecklistActual(evento);
+  evento.checklist[index].cantidad = Number(valor) || 1;
+  await guardarChecklistEnFirestore(evento);
 };
 
 window.eliminarChecklistItem = async function (index) {
-    const evento = window.eventoChecklistActual;
-    if (!evento || !evento.checklist) return;
+  const evento = window.eventoChecklistActual;
+  if (!evento || !evento.checklist) return;
 
-    evento.checklist.splice(index, 1);
-
-    await guardarChecklistEnFirestore(evento);
-    renderChecklistActual(evento);
+  evento.checklist.splice(index, 1);
+  await guardarChecklistEnFirestore(evento);
+  renderPestanaChecklist();
 };
+
+// ===============================
+// FIRESTORE
+// ===============================
+async function guardarChecklistEnFirestore(evento) {
+  if (!evento?.id) return;
+  try {
+    await updateDoc(doc(db, "events", evento.id), {
+      checklist: evento.checklist || [],
+    });
+    const index = window.allEventsData.findIndex((e) => e.id === evento.id);
+    if (index !== -1) {
+      window.allEventsData[index].checklist = [...(evento.checklist || [])];
+    }
+  } catch (error) {
+    console.error("Error al guardar checklist:", error);
+  }
+}

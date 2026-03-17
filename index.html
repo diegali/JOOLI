@@ -6,8 +6,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>JOOLI Agenda</title>
 
-  <link rel="stylesheet" href="./css/style.css?v=2.0" />
+  <link rel="stylesheet" href="./css/style.css?v=3.0" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <script
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDOEYBKUlPqplFonjOKYagQdGUP352xNcg&libraries=places&loading=async"></script>
   <script type="module" src="./js/main.js?v=2.0"></script>
   <link rel="icon" href="logoB.png" />
 
@@ -29,316 +31,126 @@
     </div>
 
     <div class="header-right">
-      <div id="notificationWrapper" style="position: relative; cursor: pointer; margin-right: 15px">
+      <div id="notificationWrapper" class="notif-wrapper">
         <span>🔔</span>
-
-        <span id="notifCount" style="
-              position: absolute;
-              top: -5px;
-              right: -5px;
-              background: red;
-              color: white;
-              border-radius: 50%;
-              padding: 2px 6px;
-              font-size: 10px;
-              display: none;
-            ">0</span>
-
-        <div id="notificationPanel" style="
-              display: none;
-              position: fixed;
-              top: 80px;
-              right: 0;
-              width: 300px;
-              background: #fff;
-              border: 1px solid #ddd;
-              border-radius: 12px;
-              box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-              padding: 15px;
-              z-index: 99999;
-            ">
-          <h4 style="
-                margin: 0 0 10px 0;
-                color: #333;
-                border-bottom: 1px solid #eee;
-                padding-bottom: 5px;
-              ">
-            Notificaciones
-          </h4>
-
-          <ul id="notifList" style="
-                list-style: none;
-                padding: 0;
-                margin: 0;
-                max-height: 300px;
-                overflow-y: auto;
-              "></ul>
+        <span id="notifCount" class="notif-count">0</span>
+        <div id="notificationPanel" class="notif-panel">
+          <h4 class="notif-title">Notificaciones</h4>
+          <ul id="notifList" class="notif-list"></ul>
         </div>
       </div>
 
-      <div class="user-info-container" style="text-align: center; margin-bottom: 0px">
-        <small id="userNameDisplay" style="
-              color: white;
-              font-size: 0.9em;
-              font-weight: 700;
-              letter-spacing: 0.5px;
-              display: block;
-              margin-bottom: 12px;
-            "></small>
-        <button id="logoutBtn" class="btn-logout" style="
-          background: transparent;
-          color: #aaa;
-          border: 1px solid #444;
-          cursor: pointer;
-          font-size: 12px;
-          padding: 6px 12px;
-        ">
-          Salir
-        </button>
+      <div class="user-info-container">
+        <small id="userNameDisplay" class="user-name-display"></small>
+        <button id="logoutBtn" class="btn-logout">Salir</button>
       </div>
     </div>
   </header>
 
-
-  <div id="loginDiv" style="
-  min-height: 100vh;
-  background: #111;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 40px 24px;
-  box-sizing: border-box;
-">
-    <div style="text-align:center; margin-bottom:32px;">
-      <div style="font-size:28px; font-weight:700; color:#d4af37; letter-spacing:2px;">JOOLI</div>
-      <div style="font-size:11px; color:#888; letter-spacing:1px; text-transform:uppercase; margin-top:4px;">
-        CateringDesk · Agenda de eventos</div>
+  <div id="loginDiv" class="login-screen">
+    <div class="login-brand">
+      <div class="login-logo-text">JOOLI</div>
+      <div class="login-brand-subtitle">CateringDesk · Agenda de eventos</div>
     </div>
-
-    <div style="
-    background:white;
-    border-radius:16px;
-    padding:28px 24px;
-    width:100%;
-    max-width:340px;
-    box-sizing:border-box;
-  ">
-      <h3 style="font-size:18px; font-weight:700; color:#111; margin:0 0 4px 0;">Bienvenido</h3>
-      <p style="font-size:13px; color:#888; margin:0 0 20px 0;">Ingresá tus credenciales para continuar</p>
-
-      <div style="margin-bottom:14px;">
-        <label
-          style="font-size:12px; font-weight:600; color:#555; display:block; margin-bottom:5px; text-transform:uppercase; letter-spacing:0.5px;">Email</label>
-        <input type="email" id="email" placeholder="ejemplo@correo.com" style="
-        width:100%; padding:12px 14px; border:1px solid #e0e0e0;
-        border-radius:10px; font-size:15px; color:#111;
-        box-sizing:border-box; outline:none;
-      ">
+    <div class="login-card">
+      <h3 class="login-title">Bienvenido</h3>
+      <p class="login-subtitle">Ingresá tus credenciales para continuar</p>
+      <div class="login-field">
+        <label class="login-label">Email</label>
+        <input type="email" id="email" placeholder="ejemplo@correo.com" class="login-input">
       </div>
-
-      <div style="margin-bottom:14px;">
-        <label
-          style="font-size:12px; font-weight:600; color:#555; display:block; margin-bottom:5px; text-transform:uppercase; letter-spacing:0.5px;">Contraseña</label>
-        <input type="password" id="password" placeholder="••••••••" style="
-        width:100%; padding:12px 14px; border:1px solid #e0e0e0;
-        border-radius:10px; font-size:15px; color:#111;
-        box-sizing:border-box; outline:none;
-      ">
+      <div class="login-field">
+        <label class="login-label">Contraseña</label>
+        <input type="password" id="password" placeholder="••••••••" class="login-input">
       </div>
-
-      <button id="loginBtn" style="
-      width:100%; padding:14px; background:#d4af37;
-      color:#111; border:none; border-radius:10px;
-      font-size:15px; font-weight:700; cursor:pointer;
-      margin-top:6px;
-    ">Ingresar</button>
+      <button id="loginBtn" class="login-btn">Ingresar</button>
     </div>
   </div>
 
   <div class="container" id="appDiv" style="display: none">
-    <nav style="
-          display: flex;
-          gap: 5px;
-          margin-bottom: 20px;
-          justify-content: center;
-          flex-wrap: nowrap;
-          overflow-x: auto;
-          padding-bottom: 10px;
-        ">
-      <button id="btn-calendar" class="nav-btn active" onclick="showSection('calendar')">
-        📅 Calendario
-      </button>
-      <button id="btn-eventsList" class="nav-btn" onclick="showSection('eventsList')">
-        📜 Lista
-      </button>
-      <button id="btn-staffSection" class="nav-btn" onclick="showSection('staffSection')">
-        👥 Staff
-      </button>
-      <button id="btn-statsContainer" class="nav-btn" onclick="showSection('statsContainer')">
-        📊 Stats
-      </button>
+    <nav class="main-nav">
+      <button id="btn-calendar" class="nav-btn active" onclick="showSection('calendar')">📅 Calendario</button>
+      <button id="btn-eventsList" class="nav-btn" onclick="showSection('eventsList')">📜 Lista</button>
+      <button id="btn-staffSection" class="nav-btn" onclick="showSection('staffSection')">👥 Staff</button>
+      <button id="btn-statsContainer" class="nav-btn" onclick="showSection('statsContainer')">📊 Stats</button>
     </nav>
 
-    <div id="searchSection" style="margin: 20px 0; display: none">
-      <input type="text" id="searchInput" placeholder="🔍 Buscar cliente..." list="clientList" style="
-            width: 100%;
-            padding: 12px;
-            border: 1px solid #ccc;
-            border-radius: 8px;
-            font-size: 16px;
-          " />
+    <div id="searchSection" class="search-section">
+      <input type="text" id="searchInput" placeholder="🔍 Buscar cliente..." list="clientList" class="search-input" />
       <datalist id="clientList"></datalist>
     </div>
 
-    <div id="filtrosEventos" style="
-  margin:10px 0 16px 0;
-  padding:12px 14px;
-  background:white;
-  border:1px solid #d9d9d9;
-  border-radius:10px;
-  display:none;
-">
-      <div style="font-size:13px; font-weight:bold; color:#666; margin-bottom:10px;">
-        Filtros
-      </div>
-
-      <div style="display:flex; gap:8px; margin-bottom:10px;">
-        <label style="
-      flex:1; display:flex; align-items:center; gap:8px;
-      background:#f4f1eb; border:1px solid #e0dbd0;
-      border-radius:8px; padding:8px 10px; cursor:pointer;
-      font-size:13px; font-weight:600; color:#555;
-    ">
-          <input type="checkbox" id="mostrarCerrados"
-            style="width:16px; height:16px; margin:0; accent-color:#c9a227; flex-shrink:0; cursor:pointer;">
+    <div id="filtrosEventos" class="filtros-eventos">
+      <div class="filtros-label">Filtros</div>
+      <div class="filtros-checkboxes">
+        <label class="filtro-check-label">
+          <input type="checkbox" id="mostrarCerrados" class="filtro-check filtro-check--cerrados">
           <span>Cerrados</span>
         </label>
-
-        <label style="
-      flex:1; display:flex; align-items:center; gap:8px;
-      background:#f4f1eb; border:1px solid #e0dbd0;
-      border-radius:8px; padding:8px 10px; cursor:pointer;
-      font-size:13px; font-weight:600; color:#555;
-    ">
-          <input type="checkbox" id="mostrarCancelados"
-            style="width:16px; height:16px; margin:0; accent-color:#c0392b; flex-shrink:0; cursor:pointer;">
+        <label class="filtro-check-label">
+          <input type="checkbox" id="mostrarCancelados" class="filtro-check filtro-check--cancelados">
           <span>Cancelados</span>
         </label>
       </div>
-
-      <div style="margin-top:10px; border-top:1px solid #eee; padding-top:10px;">
-        <div style="font-size:13px; font-weight:bold; color:#666; margin-bottom:8px;">Estado</div>
-        <div style="
-          display:flex;
-          flex-wrap:nowrap;
-          gap:8px;
-          overflow-x:auto;
-          padding-bottom:4px;
-          padding-right:32px;
-          -webkit-overflow-scrolling:touch;
-          scrollbar-width:none;
-          mask-image:linear-gradient(to right, black 85%, transparent 100%);
-          -webkit-mask-image:linear-gradient(to right, black 85%, transparent 100%);
-        ">
-          <button type="button" class="filtro-estado active" data-estado="" style="flex-shrink:0;">Todos</button>
-          <button type="button" class="filtro-estado" data-estado="Presupuestado"
-            style="flex-shrink:0;">Presupuestado</button>
-          <button type="button" class="filtro-estado" data-estado="Seña pagada" style="flex-shrink:0;">Seña
-            pagada</button>
-          <button type="button" class="filtro-estado" data-estado="Confirmado"
-            style="flex-shrink:0;">Confirmado</button>
-          <button type="button" class="filtro-estado" data-estado="Realizado" style="flex-shrink:0;">Realizado</button>
+      <div class="filtros-estado-wrap">
+        <div class="filtros-estado-label">Estado</div>
+        <div class="filtros-estado-scroll">
+          <button type="button" class="filtro-estado active" data-estado="">Todos</button>
+          <button type="button" class="filtro-estado" data-estado="Presupuestado">Presupuestado</button>
+          <button type="button" class="filtro-estado" data-estado="Seña pagada">Seña pagada</button>
+          <button type="button" class="filtro-estado" data-estado="Confirmado">Confirmado</button>
+          <button type="button" class="filtro-estado" data-estado="Realizado">Realizado</button>
         </div>
       </div>
     </div>
 
-
-    <div id="statsContainer" style="display:none; margin-bottom:20px;">
-      <div style="background:white; border-radius:12px; border:1px solid #e8e4d9; padding:16px;">
-
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
-          <div style="font-size:15px; font-weight:600; color:#222;">Estadísticas</div>
-          <input type="month" id="monthFilter"
-            style="font-size:13px; padding:4px 10px; border-radius:20px; border:1px solid #ddd; background:#f4f1eb; color:#888; width:auto;">
+    <div id="statsContainer" class="stats-container">
+      <div class="stats-inner">
+        <div class="stats-header">
+          <div class="stats-title">Estadísticas</div>
+          <input type="month" id="monthFilter" class="month-filter">
         </div>
-
-        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:10px;">
-          <div style="background:#111; border-radius:10px; padding:12px 10px; text-align:center;">
-            <div
-              style="font-size:11px; font-weight:600; color:#d4af37; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">
-              Total</div>
-            <div style="font-size:17px; font-weight:700; color:#d4af37;" id="totalMes">$0</div>
+        <div class="stats-grid stats-grid--top">
+          <div class="stat-card stat-card--dark">
+            <div class="stat-label">Total</div>
+            <div class="stat-value stat-value--gold" id="totalMes">$0</div>
           </div>
-          <div style="background:#f4f1eb; border-radius:10px; padding:12px 10px; text-align:center;">
-            <div
-              style="font-size:11px; font-weight:600; color:#888; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">
-              Señas</div>
-            <div style="font-size:17px; font-weight:700; color:#222;" id="senasMes">$0</div>
+          <div class="stat-card">
+            <div class="stat-label">Señas</div>
+            <div class="stat-value" id="senasMes">$0</div>
           </div>
-          <div style="background:#f4f1eb; border-radius:10px; padding:12px 10px; text-align:center;">
-            <div
-              style="font-size:11px; font-weight:600; color:#888; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">
-              Saldo</div>
-            <div style="font-size:17px; font-weight:700; color:#222;" id="saldoMes">$0</div>
+          <div class="stat-card">
+            <div class="stat-label">Saldo</div>
+            <div class="stat-value" id="saldoMes">$0</div>
           </div>
         </div>
-
-        <div style="height:1px; background:#e8e4d9; margin:10px 0;"></div>
-
-        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px;">
-          <div style="background:#f4f1eb; border-radius:10px; padding:12px 10px; text-align:center;">
-            <div
-              style="font-size:11px; font-weight:600; color:#888; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">
-              Eventos</div>
-            <div style="font-size:17px; font-weight:700; color:#222;" id="eventosMes">0</div>
+        <div class="stats-divider"></div>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-label">Eventos</div>
+            <div class="stat-value" id="eventosMes">0</div>
           </div>
-          <div style="background:#f4f1eb; border-radius:10px; padding:12px 10px; text-align:center;">
-            <div
-              style="font-size:11px; font-weight:600; color:#888; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">
-              Cobrado</div>
-            <div style="font-size:17px; font-weight:700; color:#27ae60;" id="cobradoMes">$0</div>
+          <div class="stat-card">
+            <div class="stat-label">Cobrado</div>
+            <div class="stat-value stat-value--green" id="cobradoMes">$0</div>
           </div>
-          <div style="background:#f4f1eb; border-radius:10px; padding:12px 10px; text-align:center;">
-            <div
-              style="font-size:11px; font-weight:600; color:#888; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">
-              Por cobrar</div>
-            <div style="font-size:17px; font-weight:700; color:#e67e22;" id="porCobrarMes">$0</div>
+          <div class="stat-card">
+            <div class="stat-label">Por cobrar</div>
+            <div class="stat-value stat-value--orange" id="porCobrarMes">$0</div>
           </div>
         </div>
-
       </div>
     </div>
 
-    <div id="addEventContainer" style="text-align: center; margin-bottom: 15px">
-      <button id="showFormBtn" style="
-            background: var(--gold);
-            color: #111;
-            padding: 10px 25px;
-            border-radius: 20px;
-            cursor: pointer;
-          ">
-        + Agregar Evento
-      </button>
+    <div id="addEventContainer" class="add-event-container">
+      <button id="showFormBtn" class="btn-add-event">+ Agregar Evento</button>
     </div>
 
-    <div id="calendar" style="
-          margin-bottom: 30px;
-          background: white;
-          padding: 10px;
-          border-radius: 12px;
-          color: #111;
-        "></div>
+    <div id="calendar" class="calendar-container"></div>
 
     <div id="daySummary" style="display: none"></div>
 
-    <div id="eventFormContainer" style="
-          display: none;
-          background: rgba(0, 0, 0, 0.05);
-          padding: 20px;
-          border-radius: 15px;
-          margin-bottom: 20px;
-        ">
+    <div id="eventFormContainer" class="event-form-container">
       <h3 id="formTitle">Nuevo Evento</h3>
       <div class="form-grid">
         <div class="form-group">
@@ -364,29 +176,29 @@
         </div>
         <div class="form-group">
           <label for="invoiceType">Tipo de Factura:</label>
-          <select id="invoiceType" class="form-control">
+          <select id="invoiceType">
             <option value="B/C">Factura B/C</option>
             <option value="A">Factura A</option>
           </select>
         </div>
         <div class="form-group">
-          <label>Lugar</label><input type="text" id="place" />
+          <label>Lugar</label>
+          <div class="place-input-wrap">
+            <input type="text" id="place" />
+            <button type="button" id="btnUbicar" class="btn-ubicar">📍</button>
+          </div>
         </div>
         <div class="form-group">
-          <label>Hora de inicio</label>
-          <input type="time" id="horaInicio" />
+          <label>Hora de inicio</label><input type="time" id="horaInicio" />
         </div>
-
         <div class="form-group">
-          <label>Hora de fin</label>
-          <input type="time" id="horaFin" />
+          <label>Hora de fin</label><input type="time" id="horaFin" />
         </div>
         <div class="form-group">
           <label>Invitados</label><input type="number" id="guests" />
         </div>
         <div class="form-group">
-          <label>Mozos necesarios</label>
-          <input type="number" id="staffNecesario" />
+          <label>Mozos necesarios</label><input type="number" id="staffNecesario" />
         </div>
         <div class="form-group">
           <label>Total $</label><input type="number" id="total" />
@@ -415,550 +227,188 @@
           <label>Nro Factura</label><input type="text" id="invoiceNumber" />
         </div>
       </div>
+
       <div class="form-group">
         <label>Notas</label><textarea id="notes"></textarea>
       </div>
-      <div class="form-group" style="margin-top:10px;">
+
+      <div class="form-group form-alquileres">
         <label>Alquileres necesarios</label>
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:6px;">
-          <label class="alquiler-label">
-            <input type="checkbox" id="alqVajilla"> Vajilla
-          </label>
-          <label class="alquiler-label">
-            <input type="checkbox" id="alqManteleria"> Mantelería
-          </label>
-          <label class="alquiler-label">
-            <input type="checkbox" id="alqMobiliario"> Mobiliario
-          </label>
-          <label class="alquiler-label">
-            <input type="checkbox" id="alqMobiliarioTrabajo"> Mob. trabajo
-          </label>
+        <div class="alquileres-grid">
+          <label class="alquiler-label"><input type="checkbox" id="alqVajilla"> Vajilla</label>
+          <label class="alquiler-label"><input type="checkbox" id="alqManteleria"> Mantelería</label>
+          <label class="alquiler-label"><input type="checkbox" id="alqMobiliario"> Mobiliario</label>
+          <label class="alquiler-label"><input type="checkbox" id="alqMobiliarioTrabajo"> Mob. trabajo</label>
         </div>
-        <input type="text" id="alqNotas" placeholder="Notas de alquiler (proveedor, precio...)" style="margin-top:8px;">
+        <input type="text" id="alqNotas" placeholder="Notas de alquiler (proveedor, precio...)" class="alq-notas">
       </div>
-      <div class="form-group" style="margin-top:15px;">
+
+      <div class="form-group form-presupuesto">
         <label>Presupuesto</label>
-
-        <input type="file" id="presupuestoFile" accept=".pdf,image/*" style="display:none;">
-
-        <div id="presupuestoInfo" style="
-    font-size:13px;
-    color:#666;
-    margin-bottom:8px;
-  ">No hay presupuesto adjunto.</div>
-
-        <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
-          <button type="button" id="btnSubirPresupuesto" style="
-      padding:10px 14px;
-      background:#2c3e50;
-      color:white;
-      border:none;
-      border-radius:8px;
-      cursor:pointer;
-    ">
-            📎 Adjuntar presupuesto
-          </button>
-
-          <button type="button" id="btnVerPresupuesto" style="
-      display:none;
-      padding:10px 14px;
-      background:#2980b9;
-      color:white;
-      border:none;
-      border-radius:8px;
-      cursor:pointer;
-    ">
-            👁 Ver presupuesto
-          </button>
-
-          <button type="button" id="btnEliminarPresupuesto" style="
-      display:none;
-      padding:10px 14px;
-      background:#c0392b;
-      color:white;
-      border:none;
-      border-radius:8px;
-      cursor:pointer;
-    ">
-            🗑 Quitar
-          </button>
+        <input type="file" id="presupuestoFile" accept=".pdf,image/*" class="presupuesto-file-input">
+        <div id="presupuestoInfo" class="presupuesto-info">No hay presupuesto adjunto.</div>
+        <div class="presupuesto-actions">
+          <button type="button" id="btnSubirPresupuesto" class="btn-presupuesto btn-presupuesto--subir">📎 Adjuntar
+            presupuesto</button>
+          <button type="button" id="btnVerPresupuesto" class="btn-presupuesto btn-presupuesto--ver">👁 Ver
+            presupuesto</button>
+          <button type="button" id="btnEliminarPresupuesto" class="btn-presupuesto btn-presupuesto--eliminar">🗑
+            Quitar</button>
         </div>
       </div>
 
-
-      <div class="form-group" style="margin-top:15px;">
-        <div style="display:flex; gap:10px;">
-
-          <button type="button" id="btnGestionarStaff" style="
-      flex:1;
-      padding:12px;
-      background:#9b59b6;
-      color:white;
-      border:none;
-      border-radius:8px;
-      cursor:pointer;
-    ">
-            👤 Staff
-          </button>
-
-          <button type="button" id="btnGestionarChecklist" style="
-      flex:1;
-      padding:12px;
-      background:#16a085;
-      color:white;
-      border:none;
-      border-radius:8px;
-      cursor:pointer;
-    ">
-            📦 Checklist
-          </button>
-
-        </div>
+      <div class="form-group form-staff-buttons">
+        <button type="button" id="btnGestionarStaff" class="btn-form-staff">👤 Staff</button>
+        <button type="button" id="btnGestionarChecklist" class="btn-form-checklist">📦 Checklist</button>
       </div>
-      <div style="margin-top: 10px; display: flex; gap: 8px;">
-        <button id="addBtn"
-          style="flex: 1; height: 44px; padding: 0; display: flex; align-items: center; justify-content: center;">Guardar</button>
-        <button id="updateBtn"
-          style="display: none; flex: 1; height: 44px; padding: 0; display: flex; align-items: center; justify-content: center;">Actualizar</button>
-        <button id="deleteBtn"
-          style="display: none; flex: 1; height: 44px; padding: 0; display: flex; align-items: center; justify-content: center; background: #c0392b">🗑
+
+      <div class="form-submit-row">
+        <button id="addBtn" class="form-submit-btn">Guardar</button>
+        <button id="updateBtn" class="form-submit-btn" style="display:none;">Actualizar</button>
+        <button id="deleteBtn" class="form-submit-btn form-submit-btn--delete" style="display:none;">🗑
           Eliminar</button>
-        <button id="cancelFormBtn"
-          style="flex: 1; height: 44px; padding: 0; display: flex; align-items: center; justify-content: center; background: #666">Cancelar</button>
+        <button id="cancelFormBtn" class="form-submit-btn form-submit-btn--cancel">Cancelar</button>
       </div>
     </div>
-
 
     <div id="eventsList" style="display: none"></div>
+
     <div id="staffSection" style="display:none;">
-      <div style="background:white; border-radius:14px; padding:20px; border:1px solid #e8e4d9;">
-
-        <div style="font-size:16px; font-weight:700; color:#111; margin-bottom:18px;">👥 Gestionar Staff</div>
-
-        <div style="display:flex; gap:8px; margin-bottom:14px;">
-          <input type="text" id="mozoNombre" placeholder="Nombre" style="
-        flex:1; padding:10px 12px; border:1px solid #ddd;
-        border-radius:8px; font-size:14px;
-      ">
-          <input type="text" id="mozoTelefono" placeholder="Teléfono" style="
-        flex:1; padding:10px 12px; border:1px solid #ddd;
-        border-radius:8px; font-size:14px;
-      ">
-          <button onclick="guardarMozo()" style="
-        padding:10px 14px; background:#d4af37; color:#111;
-        border:none; border-radius:8px; font-weight:700;
-        cursor:pointer; white-space:nowrap; font-size:14px;
-      ">+ Agregar</button>
+      <div class="staff-section-inner">
+        <div class="staff-section-title">👥 Gestionar Staff</div>
+        <div class="staff-add-row">
+          <input type="text" id="mozoNombre" placeholder="Nombre" class="staff-input">
+          <input type="text" id="mozoTelefono" placeholder="Teléfono" class="staff-input">
+          <button onclick="guardarMozo()" class="btn-staff-agregar">+ Agregar</button>
         </div>
-
-        <div style="height:1px; background:#f0ece3; margin-bottom:14px;"></div>
-
-        <div id="listaStaff" style="max-height:400px; overflow-y:auto;"></div>
-
+        <div class="staff-section-divider"></div>
+        <div id="listaStaff" class="lista-staff-scroll"></div>
       </div>
     </div>
   </div>
 
-  <div id="staffModal" style="
-  display:none;
-  position:fixed;
-  top:0; left:0;
-  width:100%; height:100%;
-  background:rgba(0,0,0,0.5);
-  z-index:1000;
-  justify-content:center;
-  align-items:center;
-">
-    <div style="
-    background:white;
-    padding:20px;
-    border-radius:14px;
-    width:92%;
-    max-width:400px;
-    box-shadow:0 10px 30px rgba(0,0,0,0.2);
-  ">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px;">
-        <div style="font-size:16px; font-weight:700; color:#111;">👥 Gestionar Staff</div>
-        <button onclick="cerrarModal()" style="
-        background:none; border:none; font-size:22px;
-        cursor:pointer; color:#aaa; padding:0;
-      ">✕</button>
-      </div>
-
-      <div style="display:flex; gap:8px; margin-bottom:14px;">
-        <input type="text" id="mozoNombre" placeholder="Nombre" style="
-        flex:1; padding:10px 12px; border:1px solid #ddd;
-        border-radius:8px; font-size:14px;
-      ">
-        <input type="text" id="mozoTelefono" placeholder="Teléfono" style="
-        flex:1; padding:10px 12px; border:1px solid #ddd;
-        border-radius:8px; font-size:14px;
-      ">
-        <button onclick="guardarMozo()" style="
-        padding:10px 14px; background:#d4af37; color:#111;
-        border:none; border-radius:8px; font-weight:700;
-        cursor:pointer; white-space:nowrap; font-size:14px;
-      ">+ Agregar</button>
-      </div>
-
-      <div style="height:1px; background:#f0ece3; margin-bottom:14px;"></div>
-
-      <div id="listaStaff" style="max-height:280px; overflow-y:auto;"></div>
-    </div>
-  </div>
-
-  <div id="modalEnvio" style="
-        display: none;
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.6);
-        z-index: 2000;
-        justify-content: center;
-        align-items: center;
-      ">
-    <div style="
-          background: white;
-          padding: 20px;
-          border-radius: 10px;
-          width: 90%;
-          max-width: 400px;
-          max-height: 80vh;
-          overflow-y: auto;
-        ">
+  <!-- MODAL ENVÍO -->
+  <div id="modalEnvio" class="modal-overlay modal-envio">
+    <div class="modal-box modal-box--envio">
       <h3>Panel de Convocatoria</h3>
       <div id="listaEnvioContenido"></div>
-      <button onclick="document.getElementById('modalEnvio').style.display = 'none'" style="
-            width: 100%;
-            margin-top: 15px;
-            padding: 10px;
-            background: #666;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-          ">
-        Cerrar
-      </button>
+      <button onclick="document.getElementById('modalEnvio').style.display = 'none'"
+        class="btn-modal-cerrar">Cerrar</button>
     </div>
   </div>
-  <div id="modalGestionStaff" style="
-        display: none;
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.6);
-        z-index: 2500;
-        justify-content: center;
-        align-items: center;
-      ">
-    <div style="
-          background: white;
-          padding: 20px;
-          border-radius: 12px;
-          width: 95%;
-          max-width: 500px;
-          max-height: 90vh;
-          overflow-y: auto;
-          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-        ">
+
+  <!-- MODAL GESTIÓN STAFF -->
+  <div id="modalGestionStaff" class="modal-overlay modal-gestion-staff">
+    <div class="modal-box modal-box--gestion-staff">
       <div class="staff-modal-header">
         <div class="staff-modal-title-wrap">
-          <h3 id="tituloModalStaff" class="staff-modal-title">
-            Staff para el evento
-          </h3>
-
+          <h3 id="tituloModalStaff" class="staff-modal-title">Staff para el evento</h3>
           <div id="resumenStaffEvento" class="staff-summary"></div>
         </div>
-
         <div class="staff-header-actions">
-          <button id="btnAbrirSeleccion" class="btn-add-staff">
-            + Agregar
-          </button>
-
-          <button id="btnCerrarModalStaff" onclick="window.cerrarModalGestionStaff()" class="btn-close-modal">
-            &times;
-          </button>
+          <button id="btnAbrirSeleccion" class="btn-add-staff">+ Agregar</button>
+          <button id="btnCerrarModalStaff" onclick="window.cerrarModalGestionStaff()"
+            class="btn-close-modal">&times;</button>
         </div>
       </div>
-      <div style="margin-bottom:15px;">
-        <label style="font-size:14px; font-weight:600;">Hora de presentación</label>
-        <input type="time" id="horaPresentacionEvento" style="
-      width:100%;
-      padding:8px;
-      margin-top:4px;
-      border:1px solid #ccc;
-      border-radius:6px;
-    ">
-      </div>
-      <div id="contenedorSeleccionStaff" style="
-            display: none;
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 8px;
-            border: 1px solid #ddd;
-            margin-bottom: 15px;
-          ">
-        <h4 style="margin-top: 0">Selecciona los mozos:</h4>
-        <div id="listadoCheckboxesCompleto" style="max-height: 200px; overflow-y: auto; margin-bottom: 10px"></div>
-        <button id="btnConfirmarAsignacion" style="
-  width:100%; padding:12px;
-  background:#d4af37; color:#111;
-  border:none; border-radius:10px;
-  cursor:pointer; font-weight:700;
-  font-size:14px; margin-top:4px;
-">
-          Confirmar y Convocar
-        </button>
+
+      <div class="form-group hora-presentacion-group">
+        <label>Hora de presentación</label>
+        <input type="time" id="horaPresentacionEvento" class="hora-presentacion-input">
       </div>
 
-      <hr style="border: 0; border-top: 1px solid #eee; margin-bottom: 15px" />
+      <div id="contenedorSeleccionStaff" class="seleccion-staff-panel">
+        <h4 class="seleccion-staff-title">Seleccioná los mozos:</h4>
+        <div id="listadoCheckboxesCompleto" class="listado-checkboxes"></div>
+        <button id="btnConfirmarAsignacion" class="btn-confirmar-asignacion">Confirmar y Convocar</button>
+      </div>
+
+      <hr class="modal-divider" />
 
       <div id="listaGestionStaffContenido"></div>
     </div>
   </div>
 
-  <div id="modalChecklist" style="
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.6);
-      z-index: 2600;
-      justify-content: center;
-      align-items: center;
-">
-    <div style="
-        background: white;
-        padding: 24px 20px 20px 20px;
-        border-radius: 12px;
-        width: 95%;
-        max-width: 600px;
-        max-height: 90vh;
-        overflow-y: auto;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-        position: relative;
-      ">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-        <div style="margin-bottom:15px;">
-          <h3 id="tituloModalChecklist" style="margin:0;">
-            📦 Checklist del evento
-          </h3>
+  <!-- MODAL CHECKLIST -->
+  <div id="modalChecklist" class="modal-overlay modal-checklist">
+    <div class="modal-box modal-box--checklist">
 
-          <div id="resumenChecklistEvento" style="font-size:0.9em; color:#666; margin-top:4px;">
-          </div>
-        </div>
+      <!-- Cabecera -->
+      <div class="modal-checklist-header">
+        <h3 id="tituloModalChecklist" class="modal-checklist-title">📦 Checklist</h3>
+        <button onclick="window.cerrarModalChecklist()" class="btn-close-modal btn-close-modal--abs">✕</button>
+      </div>
 
-        <button onclick="window.cerrarModalChecklist()" style="
-          position:absolute;
-          top:10px;
-          right:12px;
-          background:none;
-          border:none;
-          font-size:22px;
-          cursor:pointer;
-          color:#666;
-          ">
-          ✕
+      <!-- Pestañas -->
+      <div class="tab-bar">
+        <button id="tabBtnChecklist" class="tab-btn tab-btn--active"
+          onclick="window.cambiarPestanaChecklist('checklist')">
+          ✅ Checklist del evento
+        </button>
+        <button id="tabBtnCatalogo" class="tab-btn" onclick="window.cambiarPestanaChecklist('catalogo')">
+          📋 Catálogo base
         </button>
       </div>
 
-      <div id="checklistEventoActual" style="margin-top:20px;"></div>
+      <!-- Contenido dinámico -->
+      <div id="checklistContenido" class="checklist-contenido"></div>
 
-      <div id="contenidoChecklistEvento">
-        <p style="color:#666; text-align:center;">Próximamente vas a poder gestionar la checklist acá.</p>
+    </div>
+  </div>
+
+  <!-- MODAL CONFIRMAR REALIZACIÓN -->
+  <div id="modalConfirmarRealizacion" class="modal-overlay modal-confirmar">
+    <div class="modal-box modal-box--confirmar">
+      <div class="modal-confirmar-icono">📅</div>
+      <h3 class="modal-confirmar-titulo">Confirmar evento</h3>
+      <div id="textoConfirmarRealizacion" class="modal-confirmar-texto"></div>
+      <div class="modal-confirmar-acciones">
+        <button id="btnEventoRealizado" class="btn-confirmar btn-confirmar--realizado">Sí, se realizó</button>
+        <button id="btnEventoCancelado" class="btn-confirmar btn-confirmar--cancelado">No, se canceló</button>
+        <button id="btnCerrarConfirmacionEvento" class="btn-confirmar btn-confirmar--neutro">Más tarde</button>
       </div>
     </div>
   </div>
 
-  <div id="modalConfirmarRealizacion" style="
-  display:none;
-  position:fixed;
-  top:0;
-  left:0;
-  width:100%;
-  height:100%;
-  background:rgba(0,0,0,0.6);
-  z-index:3000;
-  justify-content:center;
-  align-items:center;
-">
-    <div style="
-    background:white;
-    width:92%;
-    max-width:420px;
-    border-radius:14px;
-    padding:22px 18px;
-    box-shadow:0 10px 30px rgba(0,0,0,0.25);
-    text-align:center;
-  ">
-      <div style="font-size:28px; margin-bottom:8px;">📅</div>
-
-      <h3 style="margin:0 0 10px 0; color:#222;">
-        Confirmar evento
-      </h3>
-
-      <div id="textoConfirmarRealizacion" style="
-      font-size:15px;
-      color:#444;
-      line-height:1.45;
-      margin-bottom:18px;
-    ">
-      </div>
-
-      <div style="display:flex; gap:10px; flex-direction:column;">
-        <button id="btnEventoRealizado" style="
-        padding:12px;
-        border:none;
-        border-radius:10px;
-        background:#27ae60;
-        color:white;
-        font-weight:600;
-        cursor:pointer;
-      ">
-          Sí, se realizó
-        </button>
-
-        <button id="btnEventoCancelado" style="
-        padding:12px;
-        border:none;
-        border-radius:10px;
-        background:#c0392b;
-        color:white;
-        font-weight:600;
-        cursor:pointer;
-      ">
-          No, se canceló
-        </button>
-
-        <button id="btnCerrarConfirmacionEvento" style="
-        padding:10px;
-        border:none;
-        border-radius:10px;
-        background:#e0e0e0;
-        color:#333;
-        font-weight:600;
-        cursor:pointer;
-      ">
-          Más tarde
-        </button>
-      </div>
+  <!-- MODAL AVISO SIMPLE -->
+  <div id="modalAvisoSimple" class="modal-overlay modal-aviso">
+    <div class="modal-box modal-box--aviso">
+      <div id="modalAvisoIcono" class="modal-aviso-icono">⚠️</div>
+      <h3 id="modalAvisoTitulo" class="modal-aviso-titulo">Aviso</h3>
+      <div id="modalAvisoMensaje" class="modal-aviso-mensaje">Mensaje</div>
+      <button id="btnCerrarAvisoSimple" class="btn-aviso-entendido">Entendido</button>
     </div>
   </div>
-  <div id="modalAvisoSimple" style="
-  display:none;
-  position:fixed;
-  top:0;
-  left:0;
-  width:100%;
-  height:100%;
-  background:rgba(0,0,0,0.55);
-  z-index:3100;
-  justify-content:center;
-  align-items:center;
-">
-    <div style="
-    background:white;
-    width:90%;
-    max-width:380px;
-    border-radius:14px;
-    padding:22px 18px;
-    box-shadow:0 10px 30px rgba(0,0,0,0.25);
-    text-align:center;
-  ">
-      <div id="modalAvisoIcono" style="font-size:30px; margin-bottom:8px;">⚠️</div>
 
-      <h3 id="modalAvisoTitulo" style="
-      margin:0 0 10px 0;
-      color:#222;
-      font-size:20px;
-    ">
-        Aviso
-      </h3>
-
-      <div id="modalAvisoMensaje" style="
-      font-size:15px;
-      color:#444;
-      line-height:1.45;
-      margin-bottom:18px;
-    ">
-        Mensaje
-      </div>
-
-      <button id="btnCerrarAvisoSimple" style="
-      padding:12px 16px;
-      border:none;
-      border-radius:10px;
-      background:#d4af37;
-      color:#111;
-      font-weight:600;
-      cursor:pointer;
-      min-width:120px;
-    ">
-        Entendido
-      </button>
-    </div>
-  </div>
-  <div id="modalDetalleEvento" style="
-  display:none;
-  position:fixed;
-  top:0; left:0;
-  width:100%; height:100%;
-  background:rgba(0,0,0,0.6);
-  z-index:3200;
-  justify-content:center;
-  align-items:center;
-">
-    <div style="
-    background:white;
-    width:95%;
-    max-width:480px;
-    border-radius:14px;
-    padding:20px;
-    max-height:90vh;
-    overflow-y:auto;
-    box-shadow:0 10px 30px rgba(0,0,0,0.3);
-    position:relative;
-  ">
-      <button onclick="window.cerrarModalDetalle()" style="
-      position:absolute;
-      top:10px; right:12px;
-      background:none;
-      border:none;
-      font-size:22px;
-      cursor:pointer;
-      color:#666;
-    ">✕</button>
-
+  <!-- MODAL DETALLE EVENTO -->
+  <div id="modalDetalleEvento" class="modal-overlay modal-detalle">
+    <div class="modal-box modal-box--detalle">
+      <button onclick="window.cerrarModalDetalle()" class="btn-close-modal btn-close-modal--abs">✕</button>
       <div id="detalleContenido"></div>
+      <div class="detalle-acciones">
+        <button id="detalleEditarBtn" class="btn-detalle btn-detalle--editar">✏️ Editar</button>
+        <button id="detalleStaffBtn" class="btn-detalle btn-detalle--staff">👥 Staff</button>
+        <button id="detalleChecklistBtn" class="btn-detalle btn-detalle--checklist">📦 Checklist</button>
+        <button id="detallePresupuestoBtn" class="btn-detalle btn-detalle--presupuesto" style="display:none;">📄
+          Presupuesto</button>
+      </div>
+    </div>
+  </div>
 
-      <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:16px;">
-        <button id="detalleEditarBtn" style="
-        flex:1; padding:10px; background:#111;
-        color:#d4af37; border:none; border-radius:8px;
-        cursor:pointer; font-weight:600;
-      ">✏️ Editar</button>
-        <button id="detalleStaffBtn" style="
-        flex:1; padding:10px; background:#9b59b6;
-        color:white; border:none; border-radius:8px;
-        cursor:pointer; font-weight:600;
-      ">👥 Staff</button>
-        <button id="detalleChecklistBtn" style="
-        flex:1; padding:10px; background:#16a085;
-        color:white; border:none; border-radius:8px;
-        cursor:pointer; font-weight:600;
-      ">📦 Checklist</button>
-        <button id="detallePresupuestoBtn" style="
-        display:none; flex:1; padding:10px; background:#2980b9;
-        color:white; border:none; border-radius:8px;
-        cursor:pointer; font-weight:600;
-      ">📄 Presupuesto</button>
+  <!-- MODAL MAPS -->
+  <div id="modalMaps" class="modal-overlay modal-maps">
+    <div class="modal-box modal-box--maps">
+      <div class="modal-maps-header">
+        <h3 class="modal-maps-titulo">📍 Buscar ubicación</h3>
+        <button onclick="window.cerrarModalMaps()" class="btn-close-modal btn-close-modal--abs">✕</button>
+      </div>
+      <div id="mapsSearchContainer" class="maps-search-container"></div>
+      <div id="mapContainer" class="map-container"></div>
+      <div id="mapPlaceInfo" class="map-place-info"></div>
+      <div class="map-actions">
+        <button id="btnConfirmarUbicacion" class="btn-confirmar-ubicacion" onclick="window.confirmarUbicacion()">
+          Confirmar ubicación
+        </button>
       </div>
     </div>
   </div>

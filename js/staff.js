@@ -800,7 +800,7 @@ Te contactamos de JOOLI Catering para consultarte si podés trabajar en el sigui
 
 📅 Fecha: ${fechaEvento}
 🍽 Tipo: ${evento.type || "-"}
-📍 Lugar: ${evento.place || "-"}
+📍 Lugar: ${evento.place || "-"}${evento.placeUrl ? `\n${evento.placeUrl}` : ""}
 👥 Invitados: ${evento.guests || "-"} personas
 
 🕒 Presentación: ${evento.horaPresentacion || "-"}
