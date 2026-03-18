@@ -281,7 +281,24 @@ window.abrirModalGestionStaff = async function (eventId) {
     return;
   }
 
+  // Reset del panel de selección
+  const panelReset = document.getElementById("contenedorSeleccionStaff");
+  const botonReset = document.getElementById("btnAbrirSeleccion");
+  const listaReset = document.getElementById("listaGestionStaffContenido");
+  const btnCerrarReset = document.getElementById("btnCerrarModalStaff");
+
+  if (panelReset) panelReset.style.display = "none";
+  if (listaReset) listaReset.classList.remove("staff-disabled");
+  if (btnCerrarReset) btnCerrarReset.style.display = "inline-flex";
+  if (botonReset) {
+    botonReset.innerText = "+ Agregar";
+    botonReset.disabled = false;
+    botonReset.classList.remove("completo");
+  }
+
   const inputHoraPresentacion = document.getElementById("horaPresentacionEvento");
+  const today = new Date().toISOString().split("T")[0];
+  const soloLectura = evento.date < today;
 
   if (inputHoraPresentacion) {
     if (!evento.horaPresentacion && evento.horaInicio) {
@@ -306,6 +323,7 @@ window.abrirModalGestionStaff = async function (eventId) {
     }
 
     inputHoraPresentacion.value = evento.horaPresentacion || "";
+    inputHoraPresentacion.disabled = soloLectura;
 
     inputHoraPresentacion.onchange = async function () {
       const nuevaHora = this.value;
@@ -339,8 +357,9 @@ window.abrirModalGestionStaff = async function (eventId) {
   const mensajes = ordenarStaff(evento.mensajesEnviados || []);
   const panelSeleccion = document.getElementById("contenedorSeleccionStaff");
   const seleccionAbierta = panelSeleccion && panelSeleccion.style.display !== "none";
+  const fechaFormulario = document.getElementById("date")?.value;
+  const fechaParaLectura = (window.editingId === eventId && fechaFormulario) ? fechaFormulario : evento.date;
   const totalStaffNecesario = Number(evento.staffNecesario || 0);
-
   const totalStaffAsignado = mensajes.filter(
     (m) => obtenerEstadoStaff(m) !== "rechazado"
   ).length;
@@ -349,14 +368,19 @@ window.abrirModalGestionStaff = async function (eventId) {
 
   const botonAgregar = document.getElementById("btnAbrirSeleccion");
   if (botonAgregar) {
-    if (seleccionAbierta) {
-      botonAgregar.disabled = false;
-      botonAgregar.innerText = "Cancelar";
-      botonAgregar.classList.remove("completo");
+    if (soloLectura) {
+      botonAgregar.style.display = "none";
     } else {
-      botonAgregar.disabled = staffCompleto;
-      botonAgregar.innerText = staffCompleto ? "Completo" : "+ Agregar";
-      botonAgregar.classList.toggle("completo", staffCompleto);
+      botonAgregar.style.display = "";
+      if (seleccionAbierta) {
+        botonAgregar.disabled = false;
+        botonAgregar.innerText = "Cancelar";
+        botonAgregar.classList.remove("completo");
+      } else {
+        botonAgregar.disabled = staffCompleto;
+        botonAgregar.innerText = staffCompleto ? "Completo" : "+ Agregar";
+        botonAgregar.classList.toggle("completo", staffCompleto);
+      }
     }
   }
 
@@ -407,11 +431,10 @@ window.abrirModalGestionStaff = async function (eventId) {
 
       return `
         <div class="staff-gestion-item ${seleccionAbierta ? "staff-gestion-item--disabled" : ""}">
-          <button
-            onclick="window.rotarEstado('${eventId}','${nombre}')"
-            title="Cambiar estado"
-            class="staff-avatar staff-avatar--${estado}"
-          >${inicial}</button>
+          <div
+          title="${estadoTexto[estado] || estado}"
+          class="staff-avatar staff-avatar--${estado}"
+        >${inicial}</div>
 
           <div class="staff-list-info">
             <div class="staff-list-nombre">${escapeHtml(nombre)}</div>
@@ -419,21 +442,21 @@ window.abrirModalGestionStaff = async function (eventId) {
           </div>
 
           <button
-            onclick="window.enviarWhatsApp('${eventId}','${nombre}')"
-            title="Enviar WhatsApp"
-            class="btn-icon wa"
-          >
+  ${soloLectura ? "disabled style='opacity:0.4; cursor:default;'" : `onclick="window.enviarWhatsApp('${eventId}','${nombre}')"`}
+  title="${soloLectura ? "Evento pasado" : "Enviar WhatsApp"}"
+  class="btn-icon wa"
+>
             ${whatsappEnviado
-              ? '<i class="fa-solid fa-check sent-icon"></i>'
-              : '<i class="fa-brands fa-whatsapp"></i>'
-            }
+          ? '<i class="fa-solid fa-check sent-icon"></i>'
+          : '<i class="fa-brands fa-whatsapp"></i>'
+        }
           </button>
 
-          <button
+          ${soloLectura ? "" : `<button
             onclick="window.quitarStaff('${eventId}','${nombre}')"
             title="Quitar"
             class="btn-catalogo-eliminar"
-          >🗑</button>
+          >🗑</button>`}
         </div>
       `;
     }).join("");
@@ -461,13 +484,16 @@ window.cerrarModalGestionStaff = function () {
 // ===============================
 async function togglePanelSeleccionStaff() {
   const panel = document.getElementById("contenedorSeleccionStaff");
+
   const boton = document.getElementById("btnAbrirSeleccion");
   const listado = document.getElementById("listadoCheckboxesCompleto");
   const modal = document.getElementById("modalGestionStaff");
   const listaStaff = document.getElementById("listaGestionStaffContenido");
   const btnCerrarModal = document.getElementById("btnCerrarModalStaff");
 
-  if (!panel || !boton || !listado || !modal || !listaStaff) return;
+  if (!panel || !boton || !listado || !modal || !listaStaff) {
+    return;
+  }
 
   const eventId = modal.dataset.eventId;
   const evento = window.allEventsData.find((e) => e.id === eventId);
@@ -479,7 +505,9 @@ async function togglePanelSeleccionStaff() {
     (m) => obtenerEstadoStaff(m) !== "rechazado"
   ).length;
 
+
   if (totalStaffNecesario > 0 && totalStaffAsignado >= totalStaffNecesario) {
+
     window.mostrarAvisoStaff("Staff completo", "El staff de este evento ya está completo.", "✅");
     return;
   }
@@ -547,13 +575,11 @@ async function togglePanelSeleccionStaff() {
     boton.innerText = "Cancelar";
     listaStaff.classList.add("staff-disabled");
     if (btnCerrarModal) btnCerrarModal.style.display = "none";
-    window.abrirModalGestionStaff(eventId);
   } else {
     panel.style.display = "none";
     boton.innerText = "+ Agregar";
     listaStaff.classList.remove("staff-disabled");
     if (btnCerrarModal) btnCerrarModal.style.display = "inline-flex";
-    window.abrirModalGestionStaff(eventId);
   }
 }
 
@@ -675,7 +701,7 @@ window.enviarWhatsApp = async function (eventId, nombreMozo) {
   const fechaEvento = new Date(evento.date + "T00:00:00").toLocaleDateString("es-AR");
 
   const mensaje =
-`Hola ${normalizarNombreStaff(mozo)}!
+    `Hola ${normalizarNombreStaff(mozo)}!
 
 Te contactamos de JOOLI Catering para consultarte si podés trabajar en el siguiente evento:
 
@@ -695,7 +721,22 @@ Por favor respondé:
 
 ¡Gracias!`;
 
-  const url = `https://wa.me/${telefono}?text=${encodeURIComponent(mensaje)}`;
+  window._whatsappPendiente = { url: `https://wa.me/${telefono}?text=${encodeURIComponent(mensaje)}`, eventId, mozo, evento };
+
+  window.mostrarAvisoSimple(
+    "📱 Vista previa del mensaje",
+    `<div style="background:#f4f1eb; border-radius:8px; padding:12px; font-size:13px; line-height:1.6; white-space:pre-wrap; max-height:300px; overflow-y:auto; text-align:left;">${mensaje.replace(/\n/g, "<br>")}</div><br>
+    <button onclick="window.confirmarEnvioWhatsApp()" class="btn-aviso-confirmar">Enviar por WhatsApp</button>
+    <button onclick="document.getElementById('modalAvisoSimple').style.display='none'" class="btn-aviso-cancelar">Cancelar</button>`,
+    "💬",
+    false
+  );
+};
+
+window.confirmarEnvioWhatsApp = async function () {
+  document.getElementById("modalAvisoSimple").style.display = "none";
+
+  const { url, eventId, mozo, evento } = window._whatsappPendiente;
   window.open(url, "_blank");
 
   if (typeof mozo === "object") {
@@ -708,7 +749,6 @@ Por favor respondé:
     await updateDoc(eventoRef, {
       mensajesEnviados: evento.mensajesEnviados,
     });
-
     window.abrirModalGestionStaff(eventId);
   } catch (e) {
     console.error("Error actualizando envío de WhatsApp:", e);

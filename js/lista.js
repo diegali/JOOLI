@@ -49,6 +49,10 @@ window.abrirModalChecklist = function (eventId) {
 
   if (!evento.checklist) evento.checklist = [];
   window.eventoChecklistActual = evento;
+
+  const today = new Date().toISOString().split("T")[0];
+  window.checklistSoloLectura = evento.date < today;
+
   pestanaActiva = "checklist";
 
   const titulo = document.getElementById("tituloModalChecklist");
@@ -82,8 +86,10 @@ function actualizarPestanas() {
   const btnCatalogo = document.getElementById("tabBtnCatalogo");
 
   if (btnChecklist) btnChecklist.classList.toggle("tab-btn--active", pestanaActiva === "checklist");
-  if (btnCatalogo) btnCatalogo.classList.toggle("tab-btn--active", pestanaActiva === "catalogo");
-
+  if (btnCatalogo) {
+    btnCatalogo.style.display = window.checklistSoloLectura ? "none" : "";
+    btnCatalogo.classList.toggle("tab-btn--active", pestanaActiva === "catalogo");
+  }
   if (pestanaActiva === "checklist") {
     renderPestanaChecklist();
   } else {
@@ -137,18 +143,19 @@ function renderPestanaChecklist() {
 
       items.forEach((item) => {
         const index = checklist.indexOf(item);
+        const soloLectura = window.checklistSoloLectura;
         html += `
-          <div class="checklist-item ${item.preparado ? "checklist-item--listo" : ""}">
-            <input type="checkbox" class="checklist-check" ${item.preparado ? "checked" : ""}
-              onchange="window.toggleChecklistItem(${index})">
-            <span class="checklist-nombre" onclick="window.toggleChecklistItem(${index})">
-              ${item.nombre}
-            </span>
-            <input type="number" class="checklist-cantidad" value="${item.cantidad}" min="1"
-              onchange="window.cambiarCantidadChecklist(${index}, this.value)">
-            <button type="button" class="checklist-btn-quitar"
-              onclick="window.eliminarChecklistItem(${index})">✕</button>
-          </div>`;
+  <div class="checklist-item ${item.preparado ? "checklist-item--listo" : ""}">
+    <input type="checkbox" class="checklist-check" ${item.preparado ? "checked" : ""}
+      ${soloLectura ? "disabled" : `onchange="window.toggleChecklistItem(${index})"`}>
+    <span class="checklist-nombre" ${soloLectura ? "" : `onclick="window.toggleChecklistItem(${index})"`}>
+      ${item.nombre}
+    </span>
+    <input type="number" class="checklist-cantidad" value="${item.cantidad}" min="1"
+      ${soloLectura ? "disabled" : `onchange="window.cambiarCantidadChecklist(${index}, this.value)"`}>
+    ${soloLectura ? "" : `<button type="button" class="checklist-btn-quitar"
+      onclick="window.eliminarChecklistItem(${index})">✕</button>`}
+  </div>`;
       });
 
       html += `</div>`;
@@ -157,43 +164,47 @@ function renderPestanaChecklist() {
 
   // ---- Catálogo para agregar ítems ----
   // ---- Catálogo para agregar ítems ----
-  html += `
-  <div class="checklist-agregar-titulo">➕ Agregar del catálogo</div>
+  if (!window.checklistSoloLectura) {
+    html += `
+    <div class="checklist-agregar-titulo">➕ Agregar del catálogo</div>
   <div class="catalogo-buscar">
     <input type="text" id="buscarCatalogo" placeholder="🔍 Buscar ítem..."
       class="catalogo-buscar-input" oninput="window.filtrarCatalogo()">
   </div>
 `;
+  }
 
-  if (catalogoBase.length === 0) {
-    html += `<p class="checklist-vacio">El catálogo está vacío. Añadí ítems desde la pestaña <strong>Catálogo base</strong>.</p>`;
-  } else {
-    const grupos = {};
-    catalogoBase.forEach((item) => {
-      if (!grupos[item.categoria]) grupos[item.categoria] = [];
-      grupos[item.categoria].push(item);
-    });
-
-    Object.entries(grupos).forEach(([categoria, items]) => {
-      html += `<div class="catalogo-grupo">
-        <div class="catalogo-categoria">${categoria}</div>`;
-
-      items.forEach((item) => {
-        const yaAgregado = checklist.some((i) => i.nombre === item.nombre);
-        html += `
-          <div class="catalogo-item ${yaAgregado ? "catalogo-item--agregado" : ""}">
-            <span class="catalogo-item-nombre">${item.nombre}</span>
-            <button type="button"
-              class="btn-agregar-item ${yaAgregado ? "btn-agregar-item--ya" : ""}"
-              onclick="window.agregarChecklistItem('${item.nombre}', '${item.categoria}')"
-              ${yaAgregado ? "disabled" : ""}>
-              ${yaAgregado ? "✔ Agregado" : "Agregar"}
-            </button>
-          </div>`;
+  if (!window.checklistSoloLectura) {
+    if (catalogoBase.length === 0) {
+      html += `<p class="checklist-vacio">El catálogo está vacío. Añadí ítems desde la pestaña <strong>Catálogo base</strong>.</p>`;
+    } else {
+      const grupos = {};
+      catalogoBase.forEach((item) => {
+        if (!grupos[item.categoria]) grupos[item.categoria] = [];
+        grupos[item.categoria].push(item);
       });
 
-      html += `</div>`;
-    });
+      Object.entries(grupos).forEach(([categoria, items]) => {
+        html += `<div class="catalogo-grupo">
+          <div class="catalogo-categoria">${categoria}</div>`;
+
+        items.forEach((item) => {
+          const yaAgregado = checklist.some((i) => i.nombre === item.nombre);
+          html += `
+            <div class="catalogo-item ${yaAgregado ? "catalogo-item--agregado" : ""}">
+              <span class="catalogo-item-nombre">${item.nombre}</span>
+              <button type="button"
+                class="btn-agregar-item ${yaAgregado ? "btn-agregar-item--ya" : ""}"
+                onclick="window.agregarChecklistItem('${item.nombre}', '${item.categoria}')"
+                ${yaAgregado ? "disabled" : ""}>
+                ${yaAgregado ? "✔ Agregado" : "Agregar"}
+              </button>
+            </div>`;
+        });
+
+        html += `</div>`;
+      });
+    }
   }
 
   cont.innerHTML = html;
@@ -339,8 +350,19 @@ window.onCategoriaChange = function () {
   nuevaCatEl.style.display = selectEl?.value === "__nueva__" ? "block" : "none";
 };
 
-window.eliminarDelCatalogo = async function (itemId) {
-  if (!confirm("¿Eliminar este ítem del catálogo?")) return;
+window.eliminarDelCatalogo = function (itemId) {
+  window.mostrarAvisoSimple(
+    "¿Eliminar ítem?",
+    "¿Seguro que querés eliminarlo del catálogo?<br><br>" +
+    `<button onclick="window.confirmarEliminarCatalogo('${itemId}')" class="btn-aviso-confirmar">Sí, eliminar</button>` +
+    `<button onclick="document.getElementById('modalAvisoSimple').style.display='none'" class="btn-aviso-cancelar">Cancelar</button>`,
+    "🗑",
+    false
+  );
+};
+
+window.confirmarEliminarCatalogo = async function (itemId) {
+  document.getElementById("modalAvisoSimple").style.display = "none";
   try {
     await deleteDoc(doc(db, "catalogoChecklist", itemId));
   } catch (e) {

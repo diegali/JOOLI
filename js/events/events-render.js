@@ -92,6 +92,9 @@ function createCard(evento, id) {
     const invoiceIndicator = evento.invoiceType === "A"
         ? `<span class="invoice-badge">FACT A</span>`
         : "";
+    const checklist = evento.checklist || [];
+    const checklistCompleto = checklist.length > 0 && checklist.every(item => item.preparado);
+    const checklistVacio = checklist.length === 0;
 
     const alquileresTexto = evento.alquileres && Object.values(evento.alquileres).some(v => v === true)
         ? `<div class="event-card__alquileres">🪑 ${[
@@ -111,8 +114,10 @@ function createCard(evento, id) {
           <div class="event-card__tipo">${evento.type || "-"}</div>
         </div>
         <div class="event-card__badges">
-          <div class="${statusClass}">${evento.status || "-"}</div>
-          ${pagadoBadge}
+        <div class="${statusClass}">${evento.status || "-"}</div>
+        ${pagadoBadge}
+        ${checklistCompleto ? `<span class="badge-checklist-ok">✔ Lista</span>` : ""}
+        ${!checklistVacio && !checklistCompleto ? `<span class="badge-checklist-pendiente">📦 Pendiente</span>` : ""}
         </div>
       </div>
       <div class="event-card__body">
@@ -179,7 +184,7 @@ export function registerEventDetailModal(deps) {
               </div>
 
               <div class="detail-row">
-                📍 <strong>${evento.place || "-"}</strong><br>
+                📍 <strong>${evento.place || "-"}</strong>${evento.placeUrl ? ` <a href="${evento.placeUrl}" target="_blank" class="detail-maps-link">Ver en Maps</a>` : ""}<br>
                 👥 <strong>${evento.guests || "-"}</strong> personas<br>
                 🕒 Evento: <strong>${evento.horaInicio || "-"}</strong> a <strong>${evento.horaFin || "-"}</strong><br>
                 👔 Presentación: <strong>${evento.horaPresentacion || "-"}</strong><br>
@@ -194,6 +199,8 @@ export function registerEventDetailModal(deps) {
               </div>
             `;
         }
+
+        const eventoPasado = evento.date < new Date().toISOString().split("T")[0];
 
         const editarBtn = document.getElementById("detalleEditarBtn");
         const staffBtn = document.getElementById("detalleStaffBtn");
@@ -211,7 +218,46 @@ export function registerEventDetailModal(deps) {
             };
         }
 
+        const duplicarBtn = document.getElementById("detalleDuplicarBtn");
+        if (duplicarBtn) {
+            duplicarBtn.onclick = async () => {
+                window.cerrarModalDetalle();
+                await fillFormForEdit(evento, eventoId, {
+                    setEditingId,
+                    renderStaffSelection,
+                    puedeEditarPresupuesto,
+                });
+                // Aseguramos que placeUrl quede guardado antes de limpiar el editingId
+                let placeUrlEl = document.getElementById("placeUrl");
+                if (!placeUrlEl) {
+                    placeUrlEl = document.createElement("input");
+                    placeUrlEl.type = "hidden";
+                    placeUrlEl.id = "placeUrl";
+                    document.getElementById("eventFormContainer").appendChild(placeUrlEl);
+                }
+                placeUrlEl.value = evento.placeUrl || "";
+                // Limpiar los campos que no deben duplicarse
+                setEditingId(null);
+                window.editingId = null;
+                document.getElementById("date").value = "";
+                document.getElementById("status").value = "Presupuestado";
+                document.getElementById("paid").value = "false";
+                document.getElementById("deposit").value = "";
+                document.getElementById("invoiceNumber").value = "";
+
+                const formTitle = document.getElementById("formTitle");
+                if (formTitle) formTitle.innerText = "Nuevo Evento";
+                const updateBtn = document.getElementById("updateBtn");
+                const addBtn = document.getElementById("addBtn");
+                const deleteBtn = document.getElementById("deleteBtn");
+                if (updateBtn) updateBtn.style.display = "none";
+                if (addBtn) addBtn.style.display = "inline-block";
+                if (deleteBtn) deleteBtn.style.display = "none";
+            };
+        }
+
         if (staffBtn) {
+            staffBtn.style.display = "";
             staffBtn.onclick = () => {
                 window.cerrarModalDetalle();
                 window.abrirModalGestionStaff(eventoId);
@@ -219,6 +265,7 @@ export function registerEventDetailModal(deps) {
         }
 
         if (checklistBtn) {
+            checklistBtn.style.display = "";
             checklistBtn.onclick = () => {
                 window.cerrarModalDetalle();
                 window.abrirModalChecklist(eventoId);

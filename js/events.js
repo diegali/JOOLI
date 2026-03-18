@@ -43,6 +43,7 @@ function setEditingId(value) {
 function resetEventForm() {
   resetForm({
     setEditingId,
+    actualizarUIBudget: (evento) => actualizarUIBudget(evento, { auth }),
   });
 }
 
@@ -97,10 +98,10 @@ function rerenderEvents() {
 async function saveEvent() {
   const eventData = getFormData();
 
-  if (!eventData.date || !eventData.client || !eventData.total) {
+  if (!eventData.date || !eventData.client) {
     mostrarAvisoSimple(
       "Faltan datos",
-      "Por favor completá al menos <strong>fecha</strong>, <strong>cliente</strong> y <strong>total</strong> antes de guardar.",
+      "Por favor completá al menos <strong>fecha</strong> y <strong>cliente</strong> antes de guardar.",
       "⚠️"
     );
     return;
@@ -134,7 +135,7 @@ async function updateExistingEvent() {
 
   const eventData = getFormData();
 
-  if (!eventData.date || !eventData.client || !eventData.total) {
+  if (!eventData.date || !eventData.client) {
     mostrarAvisoSimple(
       "Faltan datos",
       "Por favor completá al menos <strong>fecha</strong>, <strong>cliente</strong> y <strong>total</strong> antes de guardar.",
@@ -144,9 +145,9 @@ async function updateExistingEvent() {
   }
   const userName = getCurrentUserName();
   const userEmail = auth.currentUser?.email;
-  if (!puedeEditarPresupuesto(auth)) {
-    delete eventData.presupuestoURL;
-  }
+  delete eventData.presupuestoURL;
+  delete eventData.presupuestoNombre;
+  delete eventData.presupuestoPath;
 
   if (!["Realizado", "Cancelado"].includes(eventData.status)) {
     eventData.realizacionConfirmada = false;
@@ -181,6 +182,11 @@ function loadEvents() {
     });
 
     verificarEventosPasados(window.allEventsData);
+    if (!modalConfirmacionAbierto && !window._avisosMostrados) {
+      window._avisosMostrados = true;
+      verificarAvisosPendientes(window.allEventsData);
+    }
+
     rerenderEvents();
   });
 }
@@ -264,13 +270,12 @@ window.confirmarUbicacion = function () {
   const placeInput = document.getElementById("place");
   if (placeInput) placeInput.value = place.nombre || place.direccion;
 
-  // Guardamos el URL en un campo oculto
   let hidden = document.getElementById("placeUrl");
   if (!hidden) {
     hidden = document.createElement("input");
     hidden.type = "hidden";
     hidden.id = "placeUrl";
-    document.body.appendChild(hidden);
+    document.getElementById("eventFormContainer").appendChild(hidden);
   }
   hidden.value = place.url || "";
 
@@ -349,21 +354,16 @@ function updateClientDatalist(events) {
 function updateStats(events) {
   const monthFilter = document.getElementById("monthFilter")?.value;
 
-  let eventosFiltrados = events;
+  let eventosFiltrados = window.allEventsData || [];
 
   if (monthFilter) {
     eventosFiltrados = window.allEventsData.filter(e => {
       return e.date && e.date.startsWith(monthFilter);
     });
-  } else {
-    const today = new Date();
-    const mesActual = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
-    eventosFiltrados = window.allEventsData.filter(e => {
-      return e.date && e.date.startsWith(mesActual);
-    });
   }
+  actualizarGrafico(window.allEventsData || []);
 
-  eventosFiltrados = eventosFiltrados.filter(e => e.status !== "Cancelado");
+  eventosFiltrados = eventosFiltrados.filter(e => e.status !== "Cancelado" && e.status !== "Cerrado");
 
   const totalMes = eventosFiltrados.reduce((sum, e) => sum + Number(e.total || 0), 0);
   const senasMes = eventosFiltrados.reduce((sum, e) => sum + Number(e.deposit || 0), 0);
@@ -383,6 +383,58 @@ function updateStats(events) {
   if (countEl) countEl.innerText = eventosFiltrados.length;
   if (cobradoEl) cobradoEl.innerText = `$${cobrado.toLocaleString()}`;
   if (porCobrarEl) porCobrarEl.innerText = `$${porCobrar.toLocaleString()}`;
+}
+
+function actualizarGrafico(events) {
+  const canvas = document.getElementById("chartEventosMes");
+  if (!canvas) return;
+
+  // Agrupar eventos por mes ignorando cancelados
+  const conteo = {};
+  events
+    .filter(e => e.status !== "Cancelado")
+    .forEach(e => {
+      if (!e.date) return;
+      const mes = e.date.substring(0, 7); // "2026-03"
+      conteo[mes] = (conteo[mes] || 0) + 1;
+    });
+
+  const mesesOrdenados = Object.keys(conteo).sort();
+  const labels = mesesOrdenados.map(m => {
+    const [anio, mes] = m.split("-");
+    const nombres = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+    return `${nombres[parseInt(mes) - 1]} ${anio}`;
+  });
+  const datos = mesesOrdenados.map(m => conteo[m]);
+
+  if (window._chartEventos) {
+    window._chartEventos.destroy();
+  }
+
+  window._chartEventos = new Chart(canvas, {
+    type: "bar",
+    data: {
+      labels,
+      datasets: [{
+        label: "Eventos",
+        data: datos,
+        backgroundColor: "#d4af37",
+        borderRadius: 6,
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: { stepSize: 1 }
+        }
+      }
+    }
+  });
 }
 
 function abrirModalConfirmarRealizacion(evento) {
@@ -410,6 +462,8 @@ function cerrarModalConfirmarRealizacion() {
   modal.style.display = "none";
   eventoPendienteConfirmacion = null;
   modalConfirmacionAbierto = false;
+
+  verificarAvisosPendientes(window.allEventsData || []);
 }
 
 window.mostrarAvisoSimple = function (titulo, mensaje, icono = "⚠️", mostrarBotonEntendido = true) {
@@ -436,10 +490,8 @@ const mostrarAvisoSimple = window.mostrarAvisoSimple;
 function cerrarAvisoSimple() {
   const modal = document.getElementById("modalAvisoSimple");
   if (!modal) return;
-
   modal.style.display = "none";
 }
-
 function verificarEventosPasados(events) {
   if (modalConfirmacionAbierto) return;
 
@@ -456,6 +508,69 @@ function verificarEventosPasados(events) {
       break;
     }
   }
+}
+
+function verificarAvisosPendientes(events) {
+  const today = new Date().toISOString().split("T")[0];
+  const en3dias = new Date();
+  en3dias.setDate(en3dias.getDate() + 3);
+  const limite = en3dias.toISOString().split("T")[0];
+
+  const manana = new Date();
+  manana.setDate(manana.getDate() + 1);
+  const fechaManana = manana.toISOString().split("T")[0];
+
+  // Staff incompleto en próximos 3 días
+  const staffCriticos = events.filter(e => {
+    if (e.date < today || e.date > limite) return false;
+    if (e.status === "Cancelado") return false;
+    const staffNecesario = Number(e.staffNecesario || 0);
+    if (staffNecesario === 0) return false;
+    const asignados = (e.mensajesEnviados || []).filter(
+      m => (m.estado || "pendiente") !== "rechazado"
+    ).length;
+    return asignados < staffNecesario;
+  });
+
+  // Checklist pendiente para mañana
+  const checklistCriticos = events.filter(e => {
+    if (e.date !== fechaManana) return false;
+    if (e.status === "Cancelado") return false;
+    const checklist = e.checklist || [];
+    return checklist.length === 0 || checklist.some(item => !item.preparado);
+  });
+
+  if (staffCriticos.length === 0 && checklistCriticos.length === 0) return;
+
+  let mensaje = "";
+
+  if (staffCriticos.length > 0) {
+    mensaje += `<strong>👥 Staff incompleto:</strong><br>`;
+    mensaje += staffCriticos.map(e => {
+      const asignados = (e.mensajesEnviados || []).filter(
+        m => (m.estado || "pendiente") !== "rechazado"
+      ).length;
+      const faltan = Number(e.staffNecesario) - asignados;
+      const fecha = new Date(e.date + "T00:00:00").toLocaleDateString("es-AR");
+      return `• ${fecha} · ${e.client} — faltan <strong>${faltan} mozo${faltan > 1 ? "s" : ""}</strong>`;
+    }).join("<br>");
+  }
+
+  if (checklistCriticos.length > 0) {
+    if (mensaje) mensaje += "<br><br>";
+    mensaje += `<strong>📦 Checklist pendiente para mañana:</strong><br>`;
+    mensaje += checklistCriticos.map(e => {
+      const checklist = e.checklist || [];
+      const fecha = new Date(e.date + "T00:00:00").toLocaleDateString("es-AR");
+      if (checklist.length === 0) {
+        return `• ${fecha} · ${e.client} — sin checklist armado`;
+      }
+      const pendientes = checklist.filter(item => !item.preparado).length;
+      return `• ${fecha} · ${e.client} — <strong>${pendientes} ítem${pendientes > 1 ? "s" : ""} sin preparar</strong>`;
+    }).join("<br>");
+  }
+
+  mostrarAvisoSimple("Recordatorios", mensaje, "🔔");
 }
 
 async function confirmarRealizacionEvento(statusFinal) {
@@ -572,10 +687,7 @@ export function initEvents() {
     if (editingId) {
       window.abrirModalGestionStaff(editingId);
     } else {
-      mostrarAvisoSimple(
-        "Para gestionar el staff, primero guarda el evento o selecciónalo desde la lista.",
-        "⚠️"
-      );
+      mostrarAvisoSimple("Para gestionar el staff, primero guarda el evento o selecciónalo desde la lista.", "⚠️");
     }
   });
 
@@ -615,10 +727,7 @@ export function initEvents() {
     if (editingId) {
       window.abrirModalChecklist(editingId);
     } else {
-      mostrarAvisoSimple(
-        "Para gestionar la checklist, primero guarda el evento o selecciónalo desde la lista.",
-        "⚠️"
-      );
+      mostrarAvisoSimple("Para gestionar la checklist, primero guarda el evento o selecciónalo desde la lista.", "⚠️");
     }
   });
 
@@ -667,13 +776,12 @@ export function initEvents() {
   if (btnSubirPresupuesto && presupuestoFile) {
     btnSubirPresupuesto.addEventListener("click", () => {
       if (!editingId) {
-        mostrarAvisoSimple(
-          "Evento no guardado",
-          "Primero guardá el evento para poder adjuntar el presupuesto.",
-          "⚠️"
-        );
+        mostrarAvisoSimple("Evento no guardado", "Primero guardá el evento para poder adjuntar el presupuesto.", "⚠️");
         return;
       }
+      const evento = window.allEventsData.find(ev => ev.id === editingId);
+      const eventoPasado = evento?.date < new Date().toISOString().split("T")[0];
+      if (eventoPasado) return;
       presupuestoFile.click();
     });
 

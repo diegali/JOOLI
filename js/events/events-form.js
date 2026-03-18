@@ -30,6 +30,11 @@ export function resetForm({ setEditingId, actualizarUIBudget }) {
     if (updateBtn) updateBtn.style.display = "none";
     if (addBtn) addBtn.style.display = "inline-block";
     if (deleteBtn) deleteBtn.style.display = "none";
+
+    ["btnGestionarStaff", "btnGestionarChecklist", "btnSubirPresupuesto", "btnEliminarPresupuesto"].forEach(id => {
+        const btn = document.getElementById(id);
+        if (btn) btn.style.display = "";
+    });
 }
 
 export function getFormData() {
@@ -65,7 +70,6 @@ export function getFormData() {
                 document.getElementById("alqMobiliarioTrabajo")?.checked || false,
             notas: document.getElementById("alqNotas")?.value || "",
         },
-        presupuestoURL: document.getElementById("presupuestoURL")?.value.trim() || "",
         staffAsignado: selectedStaff,
     };
 }
@@ -176,5 +180,27 @@ export async function fillFormForEdit(evento, id, deps) {
     if (eliminarBtn) {
         eliminarBtn.style.display =
             puedeEditar && evento.presupuestoURL ? "inline-block" : "none";
+    }
+    const today = new Date().toISOString().split("T")[0];
+    const eventoPasado = evento.date < today;
+
+    const btnStaff = document.getElementById("btnGestionarStaff");
+    const btnChecklist = document.getElementById("btnGestionarChecklist");
+
+    if (btnStaff) btnStaff.style.display = "";
+    if (btnChecklist) btnChecklist.style.display = "";
+
+    if (eventoPasado) {
+        if (subirBtn) subirBtn.style.display = "none";
+        if (eliminarBtn) eliminarBtn.style.display = "none";
+    }
+    // Resetear panel de selección de staff al abrir el formulario
+    const panelSeleccion = document.getElementById("contenedorSeleccionStaff");
+    if (panelSeleccion) panelSeleccion.style.display = "none";
+    const btnAbrirSeleccion = document.getElementById("btnAbrirSeleccion");
+    if (btnAbrirSeleccion) {
+        btnAbrirSeleccion.innerText = "+ Agregar";
+        btnAbrirSeleccion.disabled = false;
+        btnAbrirSeleccion.classList.remove("completo");
     }
 }

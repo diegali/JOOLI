@@ -88,6 +88,12 @@ export async function subirPresupuestoEvento(editingId, deps) {
     };
 
     await updateDoc(eventoRef, presupuestoData);
+    const eventoEnMemoria = (window.allEventsData || []).find(e => e.id === editingId);
+    if (eventoEnMemoria) {
+        eventoEnMemoria.presupuestoURL = url;
+        eventoEnMemoria.presupuestoNombre = file.name;
+        eventoEnMemoria.presupuestoPath = filePath;
+    }
 
     actualizarUIBudget(presupuestoData, { auth });
 

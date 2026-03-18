@@ -265,3 +265,21 @@
   font-size: var(--font-size-base);
   box-sizing: border-box;
 }
+
+.badge-checklist-ok {
+  background: #27ae60;
+  color: white;
+  font-size: 0.7em;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+
+.badge-checklist-pendiente {
+  background: #e67e22;
+  color: white;
+  font-size: 0.7em;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 6px;
+}

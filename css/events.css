@@ -431,17 +431,21 @@
 
 .presupuesto-actions {
   display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
+  gap: 8px;
   align-items: center;
+  flex-wrap: wrap;
 }
 
 .btn-presupuesto {
-  padding: 10px 14px;
+  flex: 1;
+  min-width: 80px;
+  text-align: center;
+  white-space: nowrap;
+  font-size: 13px;
+  padding: 8px 10px;
+  overflow: hidden;
+  text-overflow: ellipsis;
   color: white;
-  border: none;
-  border-radius: var(--radius-md);
-  cursor: pointer;
 }
 
 .btn-presupuesto--subir    { background: var(--color-dark-btn); }
@@ -450,6 +454,7 @@
 
 .form-staff-buttons {
   display: flex;
+  flex-direction: row;
   gap: 10px;
   margin-top: 15px;
 }
@@ -487,10 +492,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  color: white;
 }
 
-.form-submit-btn--delete { background: var(--color-danger); }
-.form-submit-btn--cancel { background: #666; }
+.form-submit-btn--delete { background: var(--color-danger);color: white; }
+.form-submit-btn--cancel { background: #666; color: white; }
 
 /* ---- Lugar + Maps ---- */
 .place-input-wrap {
@@ -540,4 +546,12 @@
 .eventos-historial-zona .event-card {
   background: #ede9e0;
   border: none;
+}
+
+.btn-detalle--duplicar {
+    background: #2c3e50;
+}
+
+.stats-chart-wrap {
+  margin-top: 10px;
 }
