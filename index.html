@@ -18,6 +18,7 @@
     src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDOEYBKUlPqplFonjOKYagQdGUP352xNcg&libraries=places&loading=async"></script>
   <script type="module" src="./js/main.js?v=3.0"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <link rel="icon" href="logoB.png" />
 
   <link rel="manifest" href="manifest.json" />
@@ -80,6 +81,7 @@
       <button id="btn-eventsList" class="nav-btn" onclick="showSection('eventsList')">📜 Lista</button>
       <button id="btn-staffSection" class="nav-btn" onclick="showSection('staffSection')">🤵 Staff</button>
       <button id="btn-statsContainer" class="nav-btn" onclick="showSection('statsContainer')">📊 Stats</button>
+      <button id="showFormBtn" class="nav-btn nav-btn--agregar">＋</button>
     </nav>
 
     <div id="searchSection" class="search-section">
@@ -142,10 +144,6 @@
           <canvas id="chartEventosMes"></canvas>
         </div>
       </div>
-    </div>
-
-    <div id="addEventContainer" class="add-event-container">
-      <button id="showFormBtn" class="btn-add-event">+ Agregar Evento</button>
     </div>
 
     <div id="calendar" class="calendar-container"></div>
@@ -310,8 +308,6 @@
       <div class="form-submit-row">
         <button id="addBtn" class="form-submit-btn">Guardar</button>
         <button id="updateBtn" class="form-submit-btn" style="display:none;">Actualizar</button>
-        <button id="deleteBtn" class="form-submit-btn form-submit-btn--delete" style="display:none;">🗑
-          Eliminar</button>
         <button id="cancelFormBtn" class="form-submit-btn form-submit-btn--cancel">Cancelar</button>
       </div>
     </div>
@@ -358,6 +354,7 @@
           <div id="resumenStaffEvento" class="staff-summary"></div>
         </div>
         <div class="staff-header-actions">
+          <button onclick="window.generarPDFStaff()" class="btn-pdf-checklist">📄 ART</button>
           <button id="btnAbrirSeleccion" class="btn-add-staff">+ Agregar</button>
           <button id="btnCerrarModalStaff" onclick="window.cerrarModalGestionStaff()"
             class="btn-close-modal">&times;</button>
@@ -451,6 +448,7 @@
         <button id="detalleStaffBtn" class="btn-detalle btn-detalle--staff"><span>🤵</span>Staff</button>
         <button id="detalleChecklistBtn" class="btn-detalle btn-detalle--checklist"><span>📦</span>Checklist</button>
         <button id="detalleDuplicarBtn" class="btn-detalle btn-detalle--duplicar"><span>📋</span>Duplicar</button>
+        <button id="detalleEliminarBtn" class="btn-detalle btn-detalle--delete"><span>🗑</span>Eliminar</button>
         <button id="detallePresupuestoBtn" class="btn-detalle btn-detalle--presupuesto"
           style="display:none;"><span>📄</span>Presupuesto</button>
       </div>

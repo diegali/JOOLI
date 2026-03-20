@@ -217,8 +217,10 @@ async function eliminarEvento() {
 
 window.confirmarEliminarEvento = async function () {
   document.getElementById("modalAvisoSimple").style.display = "none";
+  const idAEliminar = window._eventoAEliminar || editingId;
   try {
-    await deleteDoc(doc(db, "events", editingId));
+    await deleteDoc(doc(db, "events", idAEliminar));
+    window._eventoAEliminar = null;
     resetEventForm();
   } catch (error) {
     console.error("Error al eliminar evento:", error);

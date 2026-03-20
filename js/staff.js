@@ -160,6 +160,7 @@ function renderStaffList(snapshot) {
           <div class="staff-list-telefono">${escapeHtml(mozo.telefono)}${mozo.dni ? ` · DNI ${escapeHtml(mozo.dni)}` : ""}</div>
           <div class="staff-list-categoria">${escapeHtml(mozo.categoria || "Mozo")}</div>
         </div>
+        <button onclick="window.verEventosMozo('${escapeHtml(mozo.nombre)}')" class="btn-staff-eventos">📅</button>
         <button onclick="window.editarMozo('${docSnap.id}','${escapeHtml(mozo.nombre)}','${escapeHtml(mozo.telefono)}','${escapeHtml(mozo.dni || "")}','${escapeHtml(mozo.categoria || "Mozo")}')" class="btn-staff-editar">✏️</button>
         <button onclick="borrarMozo('${docSnap.id}')" class="btn-catalogo-eliminar">🗑</button>
       </div>
@@ -168,6 +169,83 @@ function renderStaffList(snapshot) {
 
   listaDiv.innerHTML = html || "<p class='staff-sin-datos'>No hay staff cargado.</p>";
 }
+
+window.verEventosMozo = function (nombreMozo) {
+  const hoy = new Date().toISOString().split("T")[0];
+
+  const eventos = (window.allEventsData || []).filter(e => {
+    if (e.status === "Cancelado") return false;
+
+    if (e.esMultidia && e.jornadas?.length > 0) {
+      return e.jornadas.some(j =>
+        (j.mensajesEnviados || []).some(m => normalizarNombreStaff(m) === nombreMozo)
+      );
+    }
+    return (e.mensajesEnviados || []).some(m => normalizarNombreStaff(m) === nombreMozo);
+  });
+
+  const proximos = eventos.filter(e => (e.date || "") >= hoy);
+  const pasados = eventos.filter(e => (e.date || "") < hoy);
+
+  if (eventos.length === 0) {
+    window.mostrarAvisoStaff(
+      `📅 ${nombreMozo}`,
+      "No tiene eventos asignados.",
+      "🤵"
+    );
+    return;
+  }
+
+  const renderEvento = (e) => {
+    if (e.esMultidia && e.jornadas?.length > 0) {
+      return e.jornadas
+        .filter(j => (j.mensajesEnviados || []).some(m => normalizarNombreStaff(m) === nombreMozo))
+        .map(j => {
+          const fecha = j.fecha ? new Date(j.fecha + "T00:00:00").toLocaleDateString("es-AR") : "-";
+          const estado = (j.mensajesEnviados || []).find(m => normalizarNombreStaff(m) === nombreMozo);
+          const color = estado?.estado === "confirmado" ? "#27ae60" : estado?.estado === "rechazado" ? "#c0392b" : "#e67e22";
+          return `<div class="mozo-evento-item">
+            <div class="mozo-evento-fecha">${fecha}</div>
+            <div class="mozo-evento-info">
+              <strong>${e.client}</strong> · ${j.tipo || e.type || "-"}<br>
+              <small>${j.lugar || "-"}</small>
+            </div>
+            <span class="mozo-evento-estado" style="color:${color};">${estado?.estado || "pendiente"}</span>
+          </div>`;
+        }).join("");
+    }
+
+    const fecha = e.date ? new Date(e.date + "T00:00:00").toLocaleDateString("es-AR") : "-";
+    const estado = (e.mensajesEnviados || []).find(m => normalizarNombreStaff(m) === nombreMozo);
+    const color = estado?.estado === "confirmado" ? "#27ae60" : estado?.estado === "rechazado" ? "#c0392b" : "#e67e22";
+    return `<div class="mozo-evento-item">
+      <div class="mozo-evento-fecha">${fecha}</div>
+      <div class="mozo-evento-info">
+        <strong>${e.client}</strong> · ${e.type || "-"}<br>
+        <small>${e.place || "-"}</small>
+      </div>
+      <span class="mozo-evento-estado" style="color:${color};">${estado?.estado || "pendiente"}</span>
+    </div>`;
+  };
+
+  let contenido = "";
+
+  if (proximos.length > 0) {
+    contenido += `<div class="mozo-eventos-seccion">📅 Próximos</div>`;
+    contenido += proximos.map(renderEvento).join("");
+  }
+
+  if (pasados.length > 0) {
+    contenido += `<div class="mozo-eventos-seccion" style="margin-top:12px;">📜 Historial</div>`;
+    contenido += pasados.slice(-5).reverse().map(renderEvento).join("");
+  }
+
+  window.mostrarAvisoStaff(
+    `🤵 ${nombreMozo}`,
+    `<div style="max-height:350px; overflow-y:auto;">${contenido}</div>`,
+    "📅"
+  );
+};
 
 window.editarMozo = function (id, nombre, telefono, dni, categoria) {
   const nombreInput = document.getElementById("mozoNombre");
@@ -549,6 +627,11 @@ window.cerrarModalGestionStaff = function () {
   if (boton) boton.innerText = "+ Agregar";
   if (listaStaff) listaStaff.classList.remove("staff-disabled");
   if (modal) modal.style.display = "none";
+  // Volver al detalle si venimos de ahí
+  if (window._detalleEventoAbierto) {
+    window.abrirModalDetalle(window._detalleEventoAbierto);
+    window._detalleEventoAbierto = null;
+  }
 
   // Limpiar modo jornada
   window._modoStaffJornada = false;
@@ -764,6 +847,10 @@ window.confirmarQuitarStaff = async function (eventId, nombreMozo) {
   }
 };
 
+function esMobile() {
+  return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+}
+
 window.enviarWhatsApp = async function (eventId, nombreMozo) {
   const evento = window.allEventsData.find(e => e.id === eventId);
   if (!evento) return;
@@ -789,21 +876,24 @@ window.enviarWhatsApp = async function (eventId, nombreMozo) {
   const horaFinRef = esJornada ? staffSource.horaFin : evento.horaFin;
   const horaPresentRef = esJornada ? staffSource.horaPresentacion : evento.horaPresentacion;
 
-  const mensaje =
-    `Hola ${normalizarNombreStaff(mozo)}!
+  const mobile = esMobile();
+
+  const nl = "\n";
+
+  const mensaje = mobile
+    ? `Hola ${normalizarNombreStaff(mozo)}!
 
 Te contactamos de JOOLI Catering para consultarte si podés trabajar en el siguiente evento:
 
 📅 Fecha: ${fechaEvento}
 🍽 Tipo: ${tipoRef || "-"}
 📍 Lugar: ${lugarRef || "-"}${!esJornada && evento.placeUrl ? `\n${evento.placeUrl}` : ""}
-👥 Invitados: ${evento.guests || "-"} personas
+👥 Invitados: ${esJornada ? (staffSource.invitados || evento.guests || "-") : (evento.guests || "-")} personas
 
 🕒 Presentación: ${horaPresentRef || "-"}${(() => {
-      const lugarPres = esJornada ? staffSource.lugarPresentacion : evento.lugarPresentacion;
-      return lugarPres ? `\n📍 *Lugar de presentación: ${lugarPres}*` : "";
-    })()
-    }
+      const lp = esJornada ? staffSource.lugarPresentacion : evento.lugarPresentacion;
+      return lp ? `\n📍 *Lugar de presentación: ${lp}*` : "";
+    })()}
 🏁 Fin: ${horaFinRef || "-"}
 
 ¿Estás disponible?
@@ -812,7 +902,32 @@ Por favor respondé:
 ✅ CONFIRMO
 ❌ NO PUEDO
 
-¡Gracias!`;
+¡Gracias!`
+
+    : `Hola ${normalizarNombreStaff(mozo)}!
+
+Te contactamos de JOOLI Catering para consultarte si podés trabajar en el siguiente evento:
+
+---------------------------------------
+Fecha: ${fechaEvento}
+Tipo: ${tipoRef || "-"}
+Lugar: ${lugarRef || "-"}${!esJornada && evento.placeUrl ? `\n${evento.placeUrl}` : ""}
+Invitados: ${esJornada ? (staffSource.invitados || evento.guests || "-") : (evento.guests || "-")} personas
+
+Presentacion: ${horaPresentRef || "-"}${(() => {
+      const lp = esJornada ? staffSource.lugarPresentacion : evento.lugarPresentacion;
+      return lp ? `\n*Lugar de presentacion: ${lp}*` : "";
+    })()}
+Fin: ${horaFinRef || "-"}
+---------------------------------------
+
+Estas disponible?
+
+Por favor responde:
+- CONFIRMO
+- NO PUEDO
+
+Gracias!`;
 
   window._whatsappPendiente = {
     url: `https://wa.me/${telefono}?text=${encodeURIComponent(mensaje)}`,
@@ -906,6 +1021,114 @@ window.cargarListaStaffSeccion = function () {
   });
 };
 
+window.generarPDFStaff = function () {
+  const modal = document.getElementById("modalGestionStaff");
+  const eventId = modal?.dataset.eventId;
+  const evento = window.allEventsData.find(e => e.id === eventId);
+  if (!evento) return;
+
+  const { source: staffSource, esJornada, jornadaIdx } = getStaffSource(evento);
+  const mensajes = (staffSource.mensajesEnviados || []).filter(
+    m => obtenerEstadoStaff(m) === "confirmado"
+  );
+
+  if (mensajes.length === 0) {
+    window.mostrarAvisoStaff("Sin confirmados", "No hay staff confirmado para generar la lista ART.", "⚠️");
+    return;
+  }
+
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF();
+
+  // Encabezado
+  pdf.setFontSize(18);
+  pdf.setFont("helvetica", "bold");
+  pdf.text("JOOLI Catering", 105, 20, { align: "center" });
+
+  pdf.setFontSize(13);
+  pdf.setFont("helvetica", "normal");
+  pdf.text("Lista de personal para ART", 105, 28, { align: "center" });
+
+  // Datos del evento
+  pdf.setFontSize(11);
+  pdf.setFont("helvetica", "bold");
+
+  const fechaEvento = esJornada
+    ? (staffSource.fecha ? new Date(staffSource.fecha + "T00:00:00").toLocaleDateString("es-AR") : `Jornada ${jornadaIdx + 1}`)
+    : evento.esMultidia && evento.jornadas?.length > 0
+      ? evento.jornadas.map(j => j.fecha ? new Date(j.fecha + "T00:00:00").toLocaleDateString("es-AR") : "").filter(Boolean).join(", ")
+      : evento.date ? new Date(evento.date + "T00:00:00").toLocaleDateString("es-AR") : "";
+
+  pdf.text(`${evento.client || ""}`, 105, 38, { align: "center" });
+  pdf.setFont("helvetica", "normal");
+  pdf.setFontSize(10);
+  pdf.text(`Fecha: ${fechaEvento}`, 105, 45, { align: "center" });
+
+  if (!esJornada && evento.place) {
+    pdf.text(`Lugar: ${evento.place}`, 105, 51, { align: "center" });
+  } else if (esJornada && staffSource.lugar) {
+    pdf.text(`Lugar: ${staffSource.lugar}`, 105, 51, { align: "center" });
+  }
+
+  pdf.setDrawColor(212, 175, 55);
+  pdf.setLineWidth(0.5);
+  pdf.line(14, 57, 196, 57);
+
+  // Encabezado tabla
+  let y = 66;
+  pdf.setFillColor(240, 236, 227);
+  pdf.rect(14, y - 5, 182, 8, "F");
+  pdf.setFont("helvetica", "bold");
+  pdf.setFontSize(10);
+  pdf.text("#", 17, y);
+  pdf.text("Apellido y Nombre", 28, y);
+  pdf.text("DNI", 140, y);
+  pdf.text("Firma", 170, y);
+
+  pdf.setDrawColor(200, 200, 200);
+  pdf.setLineWidth(0.3);
+  pdf.line(14, y + 2, 196, y + 2);
+
+  y += 10;
+
+  // Filas
+  mensajes.forEach((m, i) => {
+    if (y > 275) { pdf.addPage(); y = 20; }
+
+    pdf.setFont("helvetica", "normal");
+    pdf.setFontSize(10);
+    pdf.text(`${i + 1}`, 17, y);
+    pdf.text(normalizarNombreStaff(m), 28, y);
+
+    const dni = typeof m === "object" ? (m.dni || "-") : "-";
+    pdf.text(dni, 140, y);
+
+    // Línea para firma
+    pdf.setDrawColor(180, 180, 180);
+    pdf.line(165, y, 195, y);
+
+    // Línea separadora
+    pdf.setDrawColor(230, 230, 230);
+    pdf.line(14, y + 3, 196, y + 3);
+
+    y += 12;
+  });
+
+  // Total
+  y += 4;
+  pdf.setFont("helvetica", "bold");
+  pdf.setFontSize(10);
+  pdf.text(`Total de personal: ${mensajes.length}`, 14, y);
+
+  // Pie
+  pdf.setFontSize(8);
+  pdf.setFont("helvetica", "normal");
+  pdf.setTextColor(150, 150, 150);
+  pdf.text(`Generado por JOOLI CateringDesk · ${new Date().toLocaleDateString("es-AR")}`, 105, 290, { align: "center" });
+
+  const pdfBlob = pdf.output("blob");
+  window.open(URL.createObjectURL(pdfBlob), "_blank");
+};
 // ===============================
 // INIT
 // ===============================

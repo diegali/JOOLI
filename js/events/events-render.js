@@ -137,6 +137,41 @@ function createCard(evento, id) {
         🕒 ${evento.horaInicio || "-"} a ${evento.horaFin || "-"}
       </div>
       ${alquileresTexto}
+      ${(() => {
+            const hoy = new Date().toISOString().split("T")[0];
+            const fechaRef = evento.esMultidia ? (evento.jornadas?.[0]?.fecha || "") : (evento.date || "");
+            if (fechaRef < hoy) return "";
+
+            let necesario = 0;
+            let confirmados = 0;
+            let pendientes = 0;
+
+            if (evento.esMultidia && evento.jornadas?.length > 0) {
+                evento.jornadas.forEach(j => {
+                    necesario += Number(j.staffNecesario || 0);
+                    confirmados += (j.mensajesEnviados || []).filter(m => m.estado === "confirmado").length;
+                    pendientes += (j.mensajesEnviados || []).filter(m => m.estado === "pendiente").length;
+                });
+            } else {
+                necesario = Number(evento.staffNecesario || 0);
+                const msgs = evento.mensajesEnviados || [];
+                confirmados = msgs.filter(m => m.estado === "confirmado").length;
+                pendientes = msgs.filter(m => m.estado === "pendiente").length;
+            }
+
+            const activos = confirmados + pendientes;
+            const faltan = Math.max(necesario - activos, 0);
+
+            if (necesario === 0 && activos === 0) return "";
+
+            let color = "#27ae60";
+            if (activos === 0) color = "#c0392b";
+            else if (faltan > 0) color = "#e67e22";
+
+            return `<div class="event-card__staff-resumen" style="color:${color};">
+    🤵 ${confirmados} conf. · ${pendientes} pend.${faltan > 0 ? ` · ${faltan} faltan` : " · completo"}
+  </div>`;
+        })()}
     </div>
   `;
 }
@@ -150,6 +185,7 @@ export function registerEventDetailModal(deps) {
     } = deps;
 
     window.abrirModalDetalle = async function (eventoId) {
+        window._detalleEventoAbierto = eventoId;
         const evento = getAllEvents().find((ev) => ev.id === eventoId);
         if (!evento) return;
 
@@ -223,8 +259,39 @@ export function registerEventDetailModal(deps) {
   ${evento.paid ? `<span class="detail-cobrado-badge">COBRADO</span>` : ""}<br>
   💵 Seña: <strong>$${Number(evento.deposit || 0).toLocaleString()}</strong><br>
   ${!evento.esMultidia ? `
-    🤵 <span class="${staffColorClass}">${textoStaff}</span>
-    <span class="detail-staff-conteo"> · ✔ ${confirmados} · ⏳ ${pendientes} · ❌ ${rechazados}</span><br>
+    <div class="detail-inline-accion">
+      <div>
+        🤵 <span class="${staffColorClass}">${textoStaff}</span>
+        <span class="detail-staff-conteo"> · ✔ ${confirmados} · ⏳ ${pendientes} · ❌ ${rechazados}</span>
+      </div>
+      <button onclick="window.abrirModalGestionStaff('${eventoId}')" class="btn-detail-inline">Gestionar</button>
+    </div>
+    ${(() => {
+                        const checklist = evento.checklist || [];
+                        const total = checklist.length;
+                        const preparados = checklist.filter(c => c.preparado).length;
+                        if (total === 0) return `
+        <div class="detail-inline-accion">
+          <div>📦 Sin checklist armado</div>
+          <button onclick="window.cerrarModalDetalle(); window.abrirModalChecklist('${eventoId}')" class="btn-detail-inline">Armar</button>
+        </div>`;
+                        const color = preparados === total ? "#27ae60" : preparados === 0 ? "#c0392b" : "#e67e22";
+                        return `
+        <div class="detail-inline-accion">
+          <div>📦 <span style="color:${color}; font-weight:600;">${preparados}/${total} ítems preparados</span></div>
+          <button onclick="window.abrirModalChecklist('${eventoId}')" class="btn-detail-inline">Ver</button>
+        </div>`;
+                    })()}
+  ` : ""}
+  ${!evento.esMultidia ? `
+    ${(() => {
+                        const checklist = evento.checklist || [];
+                        const total = checklist.length;
+                        const preparados = checklist.filter(c => c.preparado).length;
+                        if (total === 0) return "";
+                        const color = preparados === total ? "#27ae60" : preparados === 0 ? "#c0392b" : "#e67e22";
+                        return `📦 <span style="color:${color}; font-weight:600;">${preparados}/${total} ítems preparados</span><br>`;
+                    })()}
   ` : ""}
   ${evento.notes ? `📝 <em class="detail-notes">${evento.notes}</em><br>` : ""}
   ${evento.presupuestoURL ? `📄 Presupuesto: <a href="${evento.presupuestoURL}" target="_blank" class="detail-maps-link">Ver</a><br>` : ""}
@@ -234,12 +301,12 @@ export function registerEventDetailModal(deps) {
     <div class="detail-jornadas">
       <div class="detail-jornadas-titulo">📅 Jornadas</div>
       ${evento.jornadas.map((j, i) => {
-                    const fecha = j.fecha ? new Date(j.fecha + "T00:00:00").toLocaleDateString("es-AR") : `Jornada ${i + 1}`;
-                    const totalCheck = j.checklist?.length || 0;
-                    const preparados = j.checklist?.filter(c => c.preparado).length || 0;
-                    const staffAsig = j.mensajesEnviados?.length || 0;
-                    const confirmados = j.mensajesEnviados?.filter(m => m.estado === "confirmado").length || 0;
-                    return `
+                        const fecha = j.fecha ? new Date(j.fecha + "T00:00:00").toLocaleDateString("es-AR") : `Jornada ${i + 1}`;
+                        const totalCheck = j.checklist?.length || 0;
+                        const preparados = j.checklist?.filter(c => c.preparado).length || 0;
+                        const staffAsig = j.mensajesEnviados?.length || 0;
+                        const confirmados = j.mensajesEnviados?.filter(m => m.estado === "confirmado").length || 0;
+                        return `
           <div class="detail-jornada-item">
             <div class="detail-jornada-fecha">${fecha}</div>
             <div class="detail-jornada-info">
@@ -248,37 +315,53 @@ export function registerEventDetailModal(deps) {
               ${j.invitados ? `👥 <strong>${j.invitados}</strong> personas<br>` : ""}
               🕒 ${j.horaInicio || "-"} a ${j.horaFin || "-"}
               ${j.horaPresentacion ? `<br>👔 Presentación: ${j.horaPresentacion}` : ""}
-              ${(() => {
-                            const necesario = Number(j.staffNecesario || 0);
-                            const pendientesJ = j.mensajesEnviados?.filter(m => m.estado === "pendiente").length || 0;
-                            const rechazadosJ = j.mensajesEnviados?.filter(m => m.estado === "rechazado").length || 0;
-                            const activos = confirmados + pendientesJ;
-                            const faltan = Math.max(necesario - activos, 0);
-
-                            let textoJ = "Sin staff asignado";
-                            let colorJ = "detail-staff-danger";
-                            if (activos > 0 && faltan === 0) { textoJ = "Staff completo ✔"; colorJ = "detail-staff-ok"; }
-                            else if (activos > 0 && faltan === 1) { textoJ = "Falta 1 staff"; colorJ = "detail-staff-warning"; }
-                            else if (activos > 0) { textoJ = `Faltan ${faltan} staff`; colorJ = "detail-staff-warning"; }
-                            return staffAsig > 0 || necesario > 0
-                                ? `<br>🤵 <span class="${colorJ}">${textoJ}</span> <span class="detail-staff-conteo">· ✔ ${confirmados} · ⏳ ${pendientesJ} · ❌ ${rechazadosJ}</span>`
-                                : "";
-                        })()}
+              <div class="detail-inline-accion">
+  <div>
+    ${(() => {
+                                const necesario = Number(j.staffNecesario || 0);
+                                const pendientesJ = j.mensajesEnviados?.filter(m => m.estado === "pendiente").length || 0;
+                                const rechazadosJ = j.mensajesEnviados?.filter(m => m.estado === "rechazado").length || 0;
+                                const activos = confirmados + pendientesJ;
+                                const faltan = Math.max(necesario - activos, 0);
+                                let textoJ = "Sin staff asignado";
+                                let colorJ = "detail-staff-danger";
+                                if (activos > 0 && faltan === 0) { textoJ = "Staff completo ✔"; colorJ = "detail-staff-ok"; }
+                                else if (activos > 0 && faltan === 1) { textoJ = "Falta 1 staff"; colorJ = "detail-staff-warning"; }
+                                else if (activos > 0) { textoJ = `Faltan ${faltan} staff`; colorJ = "detail-staff-warning"; }
+                                return staffAsig > 0 || necesario > 0
+                                    ? `🤵 <span class="${colorJ}">${textoJ}</span> <span class="detail-staff-conteo">· ✔ ${confirmados} · ⏳ ${pendientesJ} · ❌ ${rechazadosJ}</span>`
+                                    : "🤵 Sin staff asignado";
+                            })()}
+  </div>
+  <button onclick="window._modoStaffJornada=true; document.getElementById('modalGestionStaff').dataset.jornadaIdx=${i}; window.abrirModalGestionStaff('${eventoId}')" class="btn-detail-inline">Gestionar</button>
+</div>
+<div class="detail-inline-accion">
+  <div>
+    ${(() => {
+                                const total = j.checklist?.length || 0;
+                                const preparados = j.checklist?.filter(c => c.preparado).length || 0;
+                                if (total === 0) return "📦 Sin checklist armado";
+                                const color = preparados === total ? "#27ae60" : preparados === 0 ? "#c0392b" : "#e67e22";
+                                return `📦 <span style="color:${color}; font-weight:600;">${preparados}/${total} ítems preparados</span>`;
+                            })()}
+  </div>
+  <button onclick="window.abrirChecklistJornada(${i}, '${eventoId}')" class="btn-detail-inline">Ver</button>
+</div>
                             ${totalCheck > 0 ? `<br>📦 ${preparados}/${totalCheck} ítems preparados` : ""}
                             ${j.alquileres && Object.values(j.alquileres).some(v => v === true) ? `
   <br>🪑 <span class="event-card__alquileres">Alquileres: ${[
-                                j.alquileres.vajilla ? "Vajilla" : null,
-                                j.alquileres.manteleria ? "Mantelería" : null,
-                                j.alquileres.mobiliario ? "Mobiliario" : null,
-                                j.alquileres.mobiliarioTrabajo ? "Mob. trabajo" : null,
-                            ].filter(Boolean).join(" · ")}</span>
+                                    j.alquileres.vajilla ? "Vajilla" : null,
+                                    j.alquileres.manteleria ? "Mantelería" : null,
+                                    j.alquileres.mobiliario ? "Mobiliario" : null,
+                                    j.alquileres.mobiliarioTrabajo ? "Mob. trabajo" : null,
+                                ].filter(Boolean).join(" · ")}</span>
   ${j.alquileres.notas ? `<br><span class="detail-notas-alquiler">📋 ${j.alquileres.notas}</span>` : ""}
 ` : ""}
               ${j.notas ? `<br>📝 <em>${j.notas}</em>` : ""}
             </div>
           </div>
         `;
-                }).join("")}
+                    }).join("")}
     </div>
   ` : ""}
 </div>
@@ -291,6 +374,21 @@ export function registerEventDetailModal(deps) {
         const staffBtn = document.getElementById("detalleStaffBtn");
         const checklistBtn = document.getElementById("detalleChecklistBtn");
         const presupuestoBtn = document.getElementById("detallePresupuestoBtn");
+        const eliminarBtn = document.getElementById("detalleEliminarBtn");
+        if (eliminarBtn) {
+            eliminarBtn.onclick = () => {
+                window.cerrarModalDetalle();
+                window.mostrarAvisoSimple(
+                    "¿Eliminar evento?",
+                    `¿Seguro que querés eliminar el evento de <strong>${evento.client}</strong>? Esta acción no se puede deshacer.<br><br>` +
+                    `<button onclick="window.confirmarEliminarEvento()" class="btn-aviso-confirmar">Sí, eliminar</button>
+             <button onclick="document.getElementById('modalAvisoSimple').style.display='none'" class="btn-aviso-cancelar">Cancelar</button>`,
+                    "🗑", false
+                );
+                // Guardar el id para que confirmarEliminarEvento sepa cuál eliminar
+                window._eventoAEliminar = eventoId;
+            };
+        }
 
         if (editarBtn) {
             editarBtn.onclick = async () => {
@@ -341,59 +439,8 @@ export function registerEventDetailModal(deps) {
             };
         }
 
-        if (staffBtn) {
-            staffBtn.style.display = "";
-            staffBtn.onclick = () => {
-                window.cerrarModalDetalle();
-                if (evento.esMultidia && evento.jornadas?.length > 0) {
-                    // Mostrar selector de jornada
-                    const opciones = evento.jornadas.map((j, i) => {
-                        const fecha = j.fecha
-                            ? new Date(j.fecha + "T00:00:00").toLocaleDateString("es-AR")
-                            : `Jornada ${i + 1}`;
-                        return `<button onclick="document.getElementById('modalAvisoSimple').style.display='none'; window._modoStaffJornada=true; document.getElementById('modalGestionStaff').dataset.jornadaIdx=${i}; window.abrirModalGestionStaff('${eventoId}')"
-                    class="btn-aviso-confirmar" style="margin-bottom:6px;">
-                    Jornada ${i + 1} · ${fecha} · ${j.tipo || "-"}
-                </button>`;
-                    }).join("");
-                    window.mostrarAvisoSimple(
-                        "¿Qué jornada?",
-                        `<div style="display:flex;flex-direction:column;gap:4px;">${opciones}</div>`,
-                        "👥", false
-                    );
-                } else {
-                    window.abrirModalGestionStaff(eventoId);
-                }
-            };
-        }
-
-        if (checklistBtn) {
-            checklistBtn.style.display = "";
-            checklistBtn.onclick = () => {
-                window.cerrarModalDetalle();
-                if (evento.esMultidia && evento.jornadas?.length > 0) {
-                    const opciones = evento.jornadas.map((j, i) => {
-                        const fecha = j.fecha
-                            ? new Date(j.fecha + "T00:00:00").toLocaleDateString("es-AR")
-                            : `Jornada ${i + 1}`;
-                        const total = j.checklist?.length || 0;
-                        const preparados = j.checklist?.filter(c => c.preparado).length || 0;
-                        return `<button onclick="document.getElementById('modalAvisoSimple').style.display='none'; window.abrirChecklistJornada(${i}, '${eventoId}')"
-                    class="btn-aviso-confirmar" style="margin-bottom:6px;">
-                    Jornada ${i + 1} · ${fecha} · ${j.tipo || "-"}
-                    ${total > 0 ? `<span style="opacity:0.7;font-size:11px;"> (${preparados}/${total})</span>` : ""}
-                </button>`;
-                    }).join("");
-                    window.mostrarAvisoSimple(
-                        "¿Qué jornada?",
-                        `<div style="display:flex;flex-direction:column;gap:4px;">${opciones}</div>`,
-                        "📦", false
-                    );
-                } else {
-                    window.abrirModalChecklist(eventoId);
-                }
-            };
-        }
+        if (staffBtn) staffBtn.style.display = "none";
+        if (checklistBtn) checklistBtn.style.display = "none";
 
         if (presupuestoBtn) presupuestoBtn.style.display = "none";
 
@@ -401,6 +448,7 @@ export function registerEventDetailModal(deps) {
     };
 
     window.cerrarModalDetalle = function () {
+        window._detalleEventoAbierto = null;
         document.getElementById("modalDetalleEvento").style.display = "none";
     };
 }

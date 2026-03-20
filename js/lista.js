@@ -70,6 +70,10 @@ window.abrirModalChecklist = function (eventId) {
 window.cerrarModalChecklist = function () {
   const modal = document.getElementById("modalChecklist");
   if (modal) modal.style.display = "none";
+  if (window._detalleEventoAbierto) {
+    window.abrirModalDetalle(window._detalleEventoAbierto);
+    window._detalleEventoAbierto = null;
+  }
   window.eventoChecklistActual = null;
 };
 
@@ -118,7 +122,10 @@ function renderPestanaChecklist() {
     <div class="checklist-progreso">
       <div class="checklist-progreso-texto">
         <span>📦 Preparado: ${preparados} / ${total}</span>
-        <span>${porcentaje}%</span>
+        <div style="display:flex; align-items:center; gap:10px;">
+          <span>${porcentaje}%</span>
+          <button onclick="window.generarPDFChecklist()" class="btn-pdf-checklist">📄 PDF</button>
+        </div>
       </div>
       <div class="checklist-progreso-barra">
         <div class="checklist-progreso-fill" style="width:${porcentaje}%"></div>
@@ -222,6 +229,115 @@ window.filtrarCatalogo = function () {
     });
     grupo.style.display = hayVisibles ? "" : "none";
   });
+};
+
+window.generarPDFChecklist = function () {
+  const evento = window.eventoChecklistActual;
+  if (!evento) return;
+
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF();
+
+  const checklist = evento.checklist || [];
+  const total = checklist.length;
+  const preparados = checklist.filter(i => i.preparado).length;
+
+  // Encabezado
+  pdf.setFontSize(18);
+  pdf.setFont("helvetica", "bold");
+  pdf.text("JOOLI Catering", 105, 20, { align: "center" });
+
+  pdf.setFontSize(13);
+  pdf.setFont("helvetica", "normal");
+  pdf.text("Checklist de evento", 105, 28, { align: "center" });
+
+  // Datos del evento
+  pdf.setFontSize(11);
+  pdf.setFont("helvetica", "bold");
+  const fecha = evento.date
+    ? new Date(evento.date + "T00:00:00").toLocaleDateString("es-AR")
+    : "";
+  pdf.text(`${evento.client || ""}  ·  ${fecha}`, 105, 38, { align: "center" });
+
+  // Progreso
+  pdf.setFont("helvetica", "normal");
+  pdf.setFontSize(10);
+  pdf.text(`Preparado: ${preparados} / ${total}`, 14, 48);
+
+  pdf.setDrawColor(212, 175, 55);
+  pdf.setLineWidth(0.5);
+  pdf.line(14, 52, 196, 52);
+
+  if (total === 0) {
+    pdf.setFontSize(11);
+    pdf.text("No hay ítems en este checklist.", 105, 65, { align: "center" });
+  } else {
+    // Agrupar por categoría
+    const grupos = {};
+    checklist.forEach(item => {
+      const cat = item.categoria || "OTROS";
+      if (!grupos[cat]) grupos[cat] = [];
+      grupos[cat].push(item);
+    });
+
+    let y = 60;
+
+    Object.entries(grupos).forEach(([categoria, items]) => {
+      // Verificar si necesitamos nueva página
+      if (y > 270) { pdf.addPage(); y = 20; }
+
+      // Título de categoría
+      pdf.setFontSize(10);
+      pdf.setFont("helvetica", "bold");
+      pdf.setTextColor(22, 160, 133);
+      pdf.text(categoria, 14, y);
+      y += 6;
+      pdf.setTextColor(0, 0, 0);
+
+      items.forEach(item => {
+        if (y > 275) { pdf.addPage(); y = 20; }
+
+        // Checkbox
+        pdf.setDrawColor(150, 150, 150);
+        pdf.setLineWidth(0.3);
+        pdf.rect(14, y - 4, 5, 5);
+
+        // Tilde si está preparado
+        if (item.preparado) {
+          pdf.setDrawColor(39, 174, 96);
+          pdf.setLineWidth(0.8);
+          pdf.line(15, y - 1.5, 16.5, y);
+          pdf.line(16.5, y, 18.5, y - 3.5);
+        }
+
+        // Nombre del ítem
+        pdf.setFont("helvetica", item.preparado ? "italic" : "normal");
+        pdf.setFontSize(10);
+        pdf.setTextColor(item.preparado ? 150 : 0, item.preparado ? 150 : 0, item.preparado ? 150 : 0);
+        pdf.text(`${item.nombre}`, 22, y);
+
+        // Cantidad
+        pdf.setFont("helvetica", "normal");
+        pdf.setTextColor(100, 100, 100);
+        pdf.text(`x${item.cantidad || 1}`, 180, y, { align: "right" });
+
+        pdf.setTextColor(0, 0, 0);
+        y += 8;
+      });
+
+      y += 4;
+    });
+  }
+
+  // Pie de página
+  pdf.setFontSize(8);
+  pdf.setTextColor(150, 150, 150);
+  pdf.text(`Generado por JOOLI CateringDesk · ${new Date().toLocaleDateString("es-AR")}`, 105, 290, { align: "center" });
+
+  // Abrir en nueva pestaña
+  const pdfBlob = pdf.output("blob");
+  const url = URL.createObjectURL(pdfBlob);
+  window.open(url, "_blank");
 };
 
 // ===============================

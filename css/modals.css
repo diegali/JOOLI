@@ -6,8 +6,10 @@
 .modal-overlay {
   display: none;
   position: fixed;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
   background: rgba(0, 0, 0, 0.6);
   z-index: 2000;
   justify-content: center;
@@ -27,22 +29,67 @@
 }
 
 /* Tamaños específicos */
-.modal-box--envio         { max-width: 400px; max-height: 80vh; }
-.modal-box--gestion-staff { max-width: 500px; }
-.modal-box--checklist     { max-width: 600px; padding: 24px 20px 20px; }
-.modal-box--confirmar     { max-width: 420px; text-align: center; }
-.modal-box--aviso         { max-width: 380px; text-align: center; }
-.modal-box--detalle       { max-width: 480px; }
-.modal-box--maps          { max-width: 520px; max-height: 90vh; }
+.modal-box--envio {
+  max-width: 400px;
+  max-height: 80vh;
+}
+
+.modal-box--gestion-staff {
+  max-width: 500px;
+}
+
+.modal-box--checklist {
+  max-width: 600px;
+  padding: 24px 20px 20px;
+}
+
+.modal-box--confirmar {
+  max-width: 420px;
+  text-align: center;
+}
+
+.modal-box--aviso {
+  max-width: 380px;
+  text-align: center;
+}
+
+.modal-box--detalle {
+  max-width: 480px;
+}
+
+.modal-box--maps {
+  max-width: 520px;
+  max-height: 90vh;
+}
 
 /* z-index escalonado */
-.modal-envio         { z-index: 2000; }
-.modal-gestion-staff { z-index: 2500; }
-.modal-checklist     { z-index: 2600; }
-.modal-confirmar     { z-index: 3000; }
-.modal-aviso         { z-index: 3100; }
-.modal-detalle       { z-index: 3200; }
-.modal-maps          { z-index: 3300; }
+.modal-envio {
+  z-index: 2000;
+}
+
+.modal-gestion-staff {
+  z-index: 2500;
+}
+
+.modal-checklist {
+  z-index: 2600;
+}
+
+.modal-confirmar {
+  z-index: 3000;
+}
+
+.modal-aviso {
+  z-index: 3100;
+}
+
+.modal-detalle {
+  z-index: 3200;
+}
+
+.modal-maps {
+  z-index: 3300;
+}
 
 /* Botones de cierre */
 .btn-modal-cerrar {
@@ -64,7 +111,9 @@
   color: #aaa;
 }
 
-.btn-close-modal:hover { color: #333; }
+.btn-close-modal:hover {
+  color: #333;
+}
 
 .btn-close-modal--abs {
   position: absolute;
@@ -109,10 +158,22 @@
   text-align: center;
 }
 
-.btn-detalle--editar      { background: var(--bg-dark); color: var(--gold); }
-.btn-detalle--staff       { background: var(--color-staff); }
-.btn-detalle--checklist   { background: var(--color-checklist); }
-.btn-detalle--presupuesto { background: var(--color-presupuesto); }
+.btn-detalle--editar {
+  background: var(--bg-dark);
+  color: var(--gold);
+}
+
+.btn-detalle--staff {
+  background: var(--color-staff);
+}
+
+.btn-detalle--checklist {
+  background: var(--color-checklist);
+}
+
+.btn-detalle--presupuesto {
+  background: var(--color-presupuesto);
+}
 
 /* Filas de detalle */
 .detail-row {
@@ -154,12 +215,26 @@
   margin-left: 6px;
 }
 
-.detail-staff-ok      { color: var(--color-success); font-weight: bold; }
-.detail-staff-warning { color: var(--color-warning); font-weight: bold; }
-.detail-staff-danger  { color: var(--color-danger);  font-weight: bold; }
+.detail-staff-ok {
+  color: var(--color-success);
+  font-weight: bold;
+}
+
+.detail-staff-warning {
+  color: var(--color-warning);
+  font-weight: bold;
+}
+
+.detail-staff-danger {
+  color: var(--color-danger);
+  font-weight: bold;
+}
 
 /* ---- Modal confirmar realización ---- */
-.modal-confirmar-icono  { font-size: 28px; margin-bottom: 8px; }
+.modal-confirmar-icono {
+  font-size: 28px;
+  margin-bottom: 8px;
+}
 
 .modal-confirmar-titulo {
   margin: 0 0 10px 0;
@@ -188,12 +263,24 @@
   color: white;
 }
 
-.btn-confirmar--realizado { background: var(--color-success); }
-.btn-confirmar--cancelado { background: var(--color-danger); }
-.btn-confirmar--neutro    { background: #e0e0e0; color: #333; }
+.btn-confirmar--realizado {
+  background: var(--color-success);
+}
+
+.btn-confirmar--cancelado {
+  background: var(--color-danger);
+}
+
+.btn-confirmar--neutro {
+  background: #e0e0e0;
+  color: #333;
+}
 
 /* ---- Modal aviso simple ---- */
-.modal-aviso-icono  { font-size: 30px; margin-bottom: 8px; }
+.modal-aviso-icono {
+  font-size: 30px;
+  margin-bottom: 8px;
+}
 
 .modal-aviso-titulo {
   margin: 0 0 10px 0;
@@ -227,7 +314,9 @@
   margin-bottom: 12px;
 }
 
-.modal-maps-titulo { margin: 0; }
+.modal-maps-titulo {
+  margin: 0;
+}
 
 .map-container {
   width: 100%;
@@ -244,7 +333,9 @@
   margin-bottom: 12px;
 }
 
-.map-actions { text-align: right; }
+.map-actions {
+  text-align: right;
+}
 
 .btn-confirmar-ubicacion {
   background: var(--gold);
@@ -263,9 +354,18 @@
   margin-bottom: 6px;
 }
 
-.detail-staff-conteo { color: #888; }
-.detail-notes        { color: #666; }
-.detail-notas-alquiler { font-size: 0.9em; color: #888; }
+.detail-staff-conteo {
+  color: #888;
+}
+
+.detail-notes {
+  color: #666;
+}
+
+.detail-notas-alquiler {
+  font-size: 0.9em;
+  color: #888;
+}
 
 .btn-aviso-confirmar {
   padding: 10px 20px;
@@ -286,4 +386,24 @@
   border-radius: var(--radius-md);
   cursor: pointer;
   font-weight: 600;
+}
+
+.btn-detalle--delete {
+  background: #c0392b;
+}
+
+#modalDetalleEvento {
+  z-index: 1000;
+}
+
+#modalGestionStaff {
+  z-index: 1100;
+}
+
+#modalChecklist {
+  z-index: 1100;
+}
+
+#modalAvisoSimple {
+  z-index: 1200;
 }

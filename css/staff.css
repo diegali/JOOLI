@@ -76,8 +76,15 @@
 }
 
 @keyframes staffFadeIn {
-  from { opacity: 0; transform: translateY(8px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .staff-info {
@@ -127,9 +134,17 @@
 }
 
 /* Colores de estado */
-.status-pendiente  { color: var(--color-warning); }
-.status-confirmado { color: var(--color-success); }
-.status-rechazado  { color: var(--color-danger); }
+.status-pendiente {
+  color: var(--color-warning);
+}
+
+.status-confirmado {
+  color: var(--color-success);
+}
+
+.status-rechazado {
+  color: var(--color-danger);
+}
 
 /* ---- Acciones ---- */
 .staff-actions {
@@ -146,16 +161,43 @@
   font-size: var(--font-size-base);
 }
 
-.btn-icon:hover        { background: #e6e6e6; }
-.btn-icon.sent         { background: transparent; border: none; }
-.btn-icon.sent i       { color: var(--color-success); font-size: 22px; }
+.btn-icon:hover {
+  background: #e6e6e6;
+}
 
-.btn-icon.danger       { color: var(--color-danger); }
-.btn-icon.danger:hover { background: #ffe5e5; color: var(--color-danger); }
+.btn-icon.sent {
+  background: transparent;
+  border: none;
+}
 
-.btn-icon.wa           { background: transparent; border: none; }
-.btn-icon.wa i         { color: #25D366; font-size: 20px; }
-.btn-icon.wa:hover i   { color: #1ebe5d; transform: scale(1.1); }
+.btn-icon.sent i {
+  color: var(--color-success);
+  font-size: 22px;
+}
+
+.btn-icon.danger {
+  color: var(--color-danger);
+}
+
+.btn-icon.danger:hover {
+  background: #ffe5e5;
+  color: var(--color-danger);
+}
+
+.btn-icon.wa {
+  background: transparent;
+  border: none;
+}
+
+.btn-icon.wa i {
+  color: #25D366;
+  font-size: 20px;
+}
+
+.btn-icon.wa:hover i {
+  color: #1ebe5d;
+  transform: scale(1.1);
+}
 
 /* ---- Modal header ---- */
 .staff-modal-header {
@@ -207,9 +249,18 @@
   white-space: nowrap;
 }
 
-.btn-add-staff:hover         { opacity: 0.9; }
-.btn-add-staff:active        { color: white; background: var(--gold-dark); }
-.btn-add-staff:focus         { color: white; }
+.btn-add-staff:hover {
+  opacity: 0.9;
+}
+
+.btn-add-staff:active {
+  color: white;
+  background: var(--gold-dark);
+}
+
+.btn-add-staff:focus {
+  color: white;
+}
 
 .btn-add-staff:disabled,
 .btn-add-staff:disabled:hover,
@@ -230,7 +281,9 @@
 }
 
 /* ---- Selección de staff ---- */
-.hora-presentacion-group { margin-bottom: 15px; }
+.hora-presentacion-group {
+  margin-bottom: 15px;
+}
 
 .hora-presentacion-input {
   width: 100%;
@@ -249,7 +302,9 @@
   margin-bottom: 15px;
 }
 
-.seleccion-staff-title { margin-top: 0; }
+.seleccion-staff-title {
+  margin-top: 0;
+}
 
 .listado-checkboxes {
   max-height: 200px;
@@ -341,9 +396,20 @@
   cursor: pointer;
 }
 
-.staff-avatar--pendiente  { background: #111;    color: #d4af37; }
-.staff-avatar--confirmado { background: #27ae60; color: white;   }
-.staff-avatar--rechazado  { background: #e74c3c; color: white;   }
+.staff-avatar--pendiente {
+  background: #111;
+  color: #d4af37;
+}
+
+.staff-avatar--confirmado {
+  background: #27ae60;
+  color: white;
+}
+
+.staff-avatar--rechazado {
+  background: #e74c3c;
+  color: white;
+}
 
 /* ---- Item de gestión ---- */
 .staff-gestion-item {
@@ -366,15 +432,34 @@
   margin-top: 1px;
 }
 
-.staff-estado--pendiente  { color: #888;    }
-.staff-estado--confirmado { color: #27ae60; }
-.staff-estado--rechazado  { color: #e74c3c; }
+.staff-estado--pendiente {
+  color: #888;
+}
+
+.staff-estado--confirmado {
+  color: #27ae60;
+}
+
+.staff-estado--rechazado {
+  color: #e74c3c;
+}
 
 /* ---- Resumen numérico en modal ---- */
-.staff-resumen-estado           { font-weight: 600; }
-.staff-resumen-estado--ok       { color: #27ae60; }
-.staff-resumen-estado--warning  { color: #f39c12; }
-.staff-resumen-estado--danger   { color: #c0392b; }
+.staff-resumen-estado {
+  font-weight: 600;
+}
+
+.staff-resumen-estado--ok {
+  color: #27ae60;
+}
+
+.staff-resumen-estado--warning {
+  color: #f39c12;
+}
+
+.staff-resumen-estado--danger {
+  color: #c0392b;
+}
 
 /* ---- Panel de selección (agregar mozos) ---- */
 .staff-seleccion-label {
@@ -449,4 +534,57 @@
   cursor: pointer;
   font-size: 15px;
   margin-top: 8px;
+}
+
+.btn-staff-eventos {
+  background: none;
+  border: none;
+  color: #aaa;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 4px 6px;
+  border-radius: 6px;
+}
+
+.btn-staff-eventos:hover {
+  color: #d4af37;
+  background: #fdf9ea;
+}
+
+.mozo-evento-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid #eee;
+  font-size: 13px;
+}
+
+.mozo-evento-fecha {
+  font-size: 12px;
+  font-weight: 700;
+  color: #d4af37;
+  white-space: nowrap;
+  min-width: 65px;
+}
+
+.mozo-evento-info {
+  flex: 1;
+  line-height: 1.4;
+}
+
+.mozo-evento-estado {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: capitalize;
+  white-space: nowrap;
+}
+
+.mozo-eventos-seccion {
+  font-size: 12px;
+  font-weight: 700;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
 }

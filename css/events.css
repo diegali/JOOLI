@@ -962,3 +962,34 @@
 .jornada-lugar {
   flex: 3;
 }
+
+.event-card__staff-resumen {
+  font-size: 12px;
+  font-weight: 600;
+  margin-top: 6px;
+}
+
+.detail-inline-accion {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.btn-detail-inline {
+  background: #2c3e50;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.btn-detail-inline:hover {
+  opacity: 0.85;
+}
