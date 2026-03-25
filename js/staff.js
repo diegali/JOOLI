@@ -1175,9 +1175,13 @@ export function abrirModalPagos(eventoId) {
   if (!evento) return;
 
   // Solo staff confirmado
-  const confirmados = (evento.mensajesEnviados || []).filter(
-    m => (typeof m === "object" ? m.estado : "pendiente") === "confirmado"
-  );
+  const confirmados = (evento.mensajesEnviados || [])
+    .filter(m => (typeof m === "object" ? m.estado : "pendiente") === "confirmado")
+    .sort((a, b) => {
+      const nombreA = (typeof a === "object" ? a.nombre : a).toLowerCase();
+      const nombreB = (typeof b === "object" ? b.nombre : b).toLowerCase();
+      return nombreA.localeCompare(nombreB, "es");
+    });
 
   const pagosGuardados = evento.pagosStaff || {};
   const lista = document.getElementById("pagosLista");
