@@ -1,5 +1,5 @@
 // js/events/events-form.js
-import { actualizarUIFactura } from "./events-budget.js";
+import { actualizarUIFactura, actualizarUIAlquiler } from "./events-budget.js";
 
 export function resetForm({ setEditingId, actualizarUIBudget }) {
     setEditingId(null);
@@ -130,6 +130,7 @@ export async function fillFormForEdit(evento, id, deps) {
                 const el = document.getElementById(field);
                 if (el) el.value = evento[field] || "";
             });
+        mostrarNombreDia(evento.date || "");
 
         const alq = evento.alquileres || {};
         const alqVajilla = document.getElementById("alqVajilla");
@@ -227,12 +228,32 @@ export async function fillFormForEdit(evento, id, deps) {
         verFacturaBtn.onclick = () => window.open(evento.facturaURL, "_blank");
     }
 
+    // Alquileres
+    const verAlquilerBtn = document.getElementById("btnVerAlquiler");
+    const eliminarAlquilerBtn = document.getElementById("btnEliminarAlquiler");
+    const subirAlquilerBtn = document.getElementById("btnSubirAlquiler");
+    const alquilerInfoEl = document.getElementById("alquilerInfo");
+
+    if (alquilerInfoEl) {
+        alquilerInfoEl.textContent = evento.alquilerNombre
+            ? `Archivo: ${evento.alquilerNombre}`
+            : "No hay archivo adjunto.";
+    }
+    if (subirAlquilerBtn) subirAlquilerBtn.style.display = puedeEditar ? "inline-block" : "none";
+    if (verAlquilerBtn) verAlquilerBtn.style.display = evento.alquilerURL ? "inline-block" : "none";
+    if (eliminarAlquilerBtn) eliminarAlquilerBtn.style.display = puedeEditar && evento.alquilerURL ? "inline-block" : "none";
+    if (verAlquilerBtn && evento.alquilerURL) {
+        verAlquilerBtn.onclick = () => window.open(evento.alquilerURL, "_blank");
+    }
+
     // Si el evento pasó, ocultar botones de subir/eliminar archivos
     if (eventoPasado) {
         if (subirBtn) subirBtn.style.display = "none";
         if (eliminarBtn) eliminarBtn.style.display = "none";
         if (subirFacturaBtn) subirFacturaBtn.style.display = "none";
         if (eliminarFacturaBtn) eliminarFacturaBtn.style.display = "none";
+        if (subirAlquilerBtn) subirAlquilerBtn.style.display = "none";
+        if (eliminarAlquilerBtn) eliminarAlquilerBtn.style.display = "none";
     }
 
     // Staff y checklist
@@ -260,4 +281,15 @@ export async function fillFormForEdit(evento, id, deps) {
         document.getElementById("eventFormContainer").appendChild(placeUrlEl);
     }
     placeUrlEl.value = evento.placeUrl || "";
+}
+
+export function mostrarNombreDia(valor) {
+    const el = document.getElementById("nombreDia");
+    if (!el) return;
+    if (!valor) { el.textContent = ""; return; }
+
+    const [anio, mes, dia] = valor.split("-").map(Number);
+    const fecha = new Date(anio, mes - 1, dia);
+    const nombre = fecha.toLocaleDateString("es-AR", { weekday: "long" });
+    el.textContent = "— " + nombre.charAt(0).toUpperCase() + nombre.slice(1);
 }

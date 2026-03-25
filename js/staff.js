@@ -1166,3 +1166,108 @@ window.abrirModalMapsLugarPresentacion = function () {
   };
   window.abrirModalMaps();
 };
+
+// ===============================
+// GESTIÓN DE PAGOS
+// ===============================
+export function abrirModalPagos(eventoId) {
+  const evento = (window.allEventsData || []).find(e => e.id === eventoId);
+  if (!evento) return;
+
+  // Solo staff confirmado
+  const confirmados = (evento.mensajesEnviados || []).filter(
+    m => (typeof m === "object" ? m.estado : "pendiente") === "confirmado"
+  );
+
+  const pagosGuardados = evento.pagosStaff || {};
+  const lista = document.getElementById("pagosLista");
+  if (!lista) return;
+
+  lista.innerHTML = confirmados.length === 0
+    ? "<p style='color:#aaa; text-align:center; padding:20px;'>No hay staff confirmado en este evento.</p>"
+    : confirmados.map(m => {
+      const nombre = typeof m === "object" ? m.nombre : m;
+      const pago = pagosGuardados[nombre] || { monto: "", pagado: false };
+      return `
+          <div class="pago-item" id="pago-item-${CSS.escape(nombre)}">
+            <input type="checkbox" id="pagado-${CSS.escape(nombre)}"
+              ${pago.pagado ? "checked" : ""}
+              onchange="window.actualizarEstiloPago('${nombre}')">
+            <span class="pago-item-nombre ${pago.pagado ? "pago-item-nombre--pagado" : ""}"
+              id="pago-nombre-${CSS.escape(nombre)}">${nombre}</span>
+            <input type="number" min="0" placeholder="$0"
+              id="monto-${CSS.escape(nombre)}"
+              value="${pago.monto || ""}"
+              oninput="window.recalcularTotalPagos()">
+          </div>`;
+    }).join("");
+
+  recalcularTotalPagos();
+
+  document.getElementById("pagoMontoFijo").value = "";
+  document.getElementById("modalPagosStaff").dataset.eventoId = eventoId;
+  document.getElementById("modalPagosStaff").style.display = "flex";
+}
+
+window.cerrarModalPagos = function () {
+  document.getElementById("modalPagosStaff").style.display = "none";
+};
+
+window.actualizarEstiloPago = function (nombre) {
+  const cb = document.getElementById(`pagado-${CSS.escape(nombre)}`);
+  const nombreEl = document.getElementById(`pago-nombre-${CSS.escape(nombre)}`);
+  if (cb && nombreEl) {
+    nombreEl.classList.toggle("pago-item-nombre--pagado", cb.checked);
+  }
+};
+
+window.aplicarMontoFijo = function () {
+  const monto = document.getElementById("pagoMontoFijo")?.value;
+  if (!monto) return;
+  document.querySelectorAll(".pago-item input[type='number']").forEach(input => {
+    input.value = monto;
+  });
+  recalcularTotalPagos();
+};
+
+function recalcularTotalPagos() {
+  const inputs = document.querySelectorAll(".pago-item input[type='number']");
+  let total = 0;
+  inputs.forEach(input => { total += Number(input.value) || 0; });
+  const totalEl = document.getElementById("pagosTotal");
+  if (totalEl) totalEl.textContent = `Total: $${total.toLocaleString("es-AR")}`;
+}
+window.recalcularTotalPagos = recalcularTotalPagos;
+
+window.guardarPagos = async function () {
+  const eventoId = document.getElementById("modalPagosStaff")?.dataset.eventoId;
+  if (!eventoId) return;
+
+  const evento = (window.allEventsData || []).find(e => e.id === eventoId);
+  if (!evento) return;
+
+  const confirmados = (evento.mensajesEnviados || []).filter(
+    m => (typeof m === "object" ? m.estado : "pendiente") === "confirmado"
+  );
+
+  const pagosStaff = {};
+  confirmados.forEach(m => {
+    const nombre = typeof m === "object" ? m.nombre : m;
+    const monto = Number(document.getElementById(`monto-${CSS.escape(nombre)}`)?.value) || 0;
+    const pagado = document.getElementById(`pagado-${CSS.escape(nombre)}`)?.checked || false;
+    pagosStaff[nombre] = { monto, pagado };
+  });
+
+  try {
+    const { db } = await import("./auth.js");
+    const { doc, updateDoc } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+    await updateDoc(doc(db, "events", eventoId), { pagosStaff });
+
+    evento.pagosStaff = pagosStaff;
+
+    window.mostrarAvisoSimple("Pagos guardados", "Los pagos se registraron correctamente.", "✅");
+    window.cerrarModalPagos();
+  } catch (e) {
+    window.mostrarAvisoSimple("Error", "No se pudieron guardar los pagos.", "❌");
+  }
+};

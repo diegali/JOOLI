@@ -43,7 +43,9 @@ export function formatDate(dateStr) {
     if (!dateStr) return "";
 
     const d = new Date(dateStr + "T00:00:00");
-    return d.toLocaleDateString("es-AR");
+    const dia = d.toLocaleDateString("es-AR", { weekday: "long" });
+    const fecha = d.toLocaleDateString("es-AR");
+    return dia.charAt(0).toUpperCase() + dia.slice(1) + " " + fecha;
 }
 
 export const STATUS_COLORS = {

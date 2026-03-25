@@ -209,3 +209,70 @@ export async function eliminarFacturaEvento(editingId, deps) {
         window.mostrarAvisoSimple("Error", "No se pudo eliminar la factura.", "❌");
     }
 }
+
+export function actualizarUIAlquiler(evento, deps) {
+    const { auth } = deps;
+    const verBtn = document.getElementById("btnVerAlquiler");
+    const eliminarBtn = document.getElementById("btnEliminarAlquiler");
+    const subirBtn = document.getElementById("btnSubirAlquiler");
+    const infoEl = document.getElementById("alquilerInfo");
+    const puedeEditar = puedeEditarPresupuesto(auth);
+
+    if (infoEl) {
+        infoEl.textContent = evento?.alquilerNombre
+            ? `Archivo: ${evento.alquilerNombre}`
+            : "No hay archivo adjunto.";
+    }
+    if (subirBtn) subirBtn.style.display = puedeEditar ? "inline-block" : "none";
+    if (verBtn) verBtn.style.display = evento?.alquilerURL ? "inline-block" : "none";
+    if (eliminarBtn) eliminarBtn.style.display = puedeEditar && evento?.alquilerURL ? "inline-block" : "none";
+    if (verBtn && evento?.alquilerURL) {
+        verBtn.onclick = () => window.open(evento.alquilerURL, "_blank");
+    }
+}
+
+export async function subirAlquilerEvento(editingId, deps) {
+    const { storage, db, auth } = deps;
+    if (!editingId) {
+        window.mostrarAvisoSimple("Evento sin guardar", "Primero guardá el evento antes de subir el archivo.", "⚠️");
+        return;
+    }
+
+    const input = document.getElementById("alquilerFile");
+    const file = input?.files?.[0];
+    if (!file) return;
+
+    const filePath = `alquileres/${editingId}/${file.name}`;
+    const storageRef = ref(storage, filePath);
+
+    await uploadBytes(storageRef, file);
+    const url = await getDownloadURL(storageRef);
+
+    const eventoRef = doc(db, "events", editingId);
+    const alquilerData = { alquilerURL: url, alquilerNombre: file.name, alquilerPath: filePath };
+
+    await updateDoc(eventoRef, alquilerData);
+
+    const eventoEnMemoria = (window.allEventsData || []).find(e => e.id === editingId);
+    if (eventoEnMemoria) Object.assign(eventoEnMemoria, alquilerData);
+
+    actualizarUIAlquiler(alquilerData, { auth });
+    window.mostrarAvisoSimple("Archivo subido", "El archivo de alquileres se adjuntó correctamente.", "✅");
+}
+
+export async function eliminarAlquilerEvento(editingId, deps) {
+    const { db, storage, auth } = deps;
+    if (!editingId) return;
+
+    const evento = (window.allEventsData || []).find(e => e.id === editingId);
+    if (!evento?.alquilerPath) return;
+
+    try {
+        await deleteObject(ref(storage, evento.alquilerPath));
+        await updateDoc(doc(db, "events", editingId), { alquilerURL: "", alquilerNombre: "", alquilerPath: "" });
+        actualizarUIAlquiler(null, { auth });
+        window.mostrarAvisoSimple("Archivo eliminado", "El archivo de alquileres se eliminó correctamente.", "✅");
+    } catch (error) {
+        window.mostrarAvisoSimple("Error", "No se pudo eliminar el archivo.", "❌");
+    }
+}

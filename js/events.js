@@ -5,6 +5,9 @@ import {
   eliminarPresupuestoEvento,
   subirFacturaEvento,
   eliminarFacturaEvento,
+  actualizarUIAlquiler,
+  subirAlquilerEvento,
+  eliminarAlquilerEvento,
 } from "./events/events-budget.js";
 import {
   renderFilteredEvents,
@@ -578,6 +581,44 @@ export function initEvents() {
   window.confirmarEliminarFactura = async function () {
     document.getElementById("modalAvisoSimple").style.display = "none";
     await eliminarFacturaEvento(editingId, { db, storage, auth });
+  };
+
+  // Alquileres
+  const alquilerFile = document.getElementById("alquilerFile");
+  const btnSubirAlquiler = document.getElementById("btnSubirAlquiler");
+  const btnEliminarAlquiler = document.getElementById("btnEliminarAlquiler");
+
+  if (btnSubirAlquiler && alquilerFile) {
+    btnSubirAlquiler.addEventListener("click", () => {
+      if (!editingId) {
+        mostrarAvisoSimple("Evento no guardado", "Primero guardá el evento para poder adjuntar el archivo.", "⚠️");
+        return;
+      }
+      alquilerFile.click();
+    });
+    alquilerFile.addEventListener("change", async () => {
+      await subirAlquilerEvento(editingId, { storage, db, auth });
+      alquilerFile.value = "";
+    });
+  }
+
+  if (btnEliminarAlquiler) {
+    btnEliminarAlquiler.addEventListener("click", () => {
+      const ev = window.allEventsData.find(ev => ev.id === editingId);
+      const nombreArchivo = ev?.alquilerNombre || "este archivo";
+      mostrarAvisoSimple(
+        "¿Eliminar archivo?",
+        `¿Seguro que querés eliminar <strong>${nombreArchivo}</strong>?<br><br>` +
+        `<button onclick="window.confirmarEliminarAlquiler()" class="btn-aviso-confirmar">Sí, eliminar</button>
+         <button onclick="document.getElementById('modalAvisoSimple').style.display='none'" class="btn-aviso-cancelar">Cancelar</button>`,
+        "🗑️", false
+      );
+    });
+  }
+
+  window.confirmarEliminarAlquiler = async function () {
+    document.getElementById("modalAvisoSimple").style.display = "none";
+    await eliminarAlquilerEvento(editingId, { db, storage, auth });
   };
 
   // Staff/Checklist de jornadas

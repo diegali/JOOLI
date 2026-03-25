@@ -1,4 +1,5 @@
 import { initEvents } from "./events.js";
+import { mostrarNombreDia } from "./events/events-form.js";
 import { initCalendar } from "./calendar.js";
 import { initStaff } from "./staff.js";
 import { auth, db } from "./auth.js";
@@ -21,8 +22,7 @@ import {
   orderBy,
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-
-
+window.mostrarNombreDia = mostrarNombreDia;
 // ===============================
 // SECCIONES Y UI
 // ===============================

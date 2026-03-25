@@ -1,6 +1,7 @@
 // js/events/events-render.js
 
 import { getMonthLabel, formatDate } from "./events-utils.js";
+import { abrirModalPagos } from "../staff.js";
 import { fillFormForEdit } from "./events-form.js";
 
 export function renderFilteredEvents(events, deps) {
@@ -283,16 +284,7 @@ export function registerEventDetailModal(deps) {
         </div>`;
                     })()}
   ` : ""}
-  ${!evento.esMultidia ? `
-    ${(() => {
-                        const checklist = evento.checklist || [];
-                        const total = checklist.length;
-                        const preparados = checklist.filter(c => c.preparado).length;
-                        if (total === 0) return "";
-                        const color = preparados === total ? "#27ae60" : preparados === 0 ? "#c0392b" : "#e67e22";
-                        return `📦 <span style="color:${color}; font-weight:600;">${preparados}/${total} ítems preparados</span><br>`;
-                    })()}
-  ` : ""}
+  
   ${evento.notes ? `📝 <em class="detail-notes">${evento.notes}</em><br>` : ""}
   ${evento.presupuestoURL ? `📄 Presupuesto: <a href="${evento.presupuestoURL}" target="_blank" class="detail-maps-link">${evento.presupuestoNombre || "Ver"}</a><br>` : ""}
   ${evento.invoiceNumber ? `🧾 Factura: <strong>${evento.invoiceType || ""} ${evento.invoiceNumber}</strong>${evento.facturaURL ? ` <a href="${evento.facturaURL}" target="_blank" class="detail-maps-link">Ver</a>` : ""}<br>` : ""}
@@ -347,8 +339,7 @@ export function registerEventDetailModal(deps) {
   </div>
   <button onclick="window.abrirChecklistJornada(${i}, '${eventoId}')" class="btn-detail-inline">Ver</button>
 </div>
-                            ${totalCheck > 0 ? `<br>📦 ${preparados}/${totalCheck} ítems preparados` : ""}
-                            ${j.alquileres && Object.values(j.alquileres).some(v => v === true) ? `
+                                   ${j.alquileres && Object.values(j.alquileres).some(v => v === true) ? `
   <br>🪑 <span class="event-card__alquileres">Alquileres: ${[
                                     j.alquileres.vajilla ? "Vajilla" : null,
                                     j.alquileres.manteleria ? "Mantelería" : null,
@@ -441,6 +432,15 @@ export function registerEventDetailModal(deps) {
 
         if (staffBtn) staffBtn.style.display = "none";
         if (checklistBtn) checklistBtn.style.display = "none";
+
+        const pagosBtn = document.getElementById("detallePagosBtn");
+        if (pagosBtn) {
+            pagosBtn.style.display = "";
+            pagosBtn.onclick = () => {
+                window.cerrarModalDetalle();
+                abrirModalPagos(eventoId);
+            };
+        }
 
         if (presupuestoBtn) {
             presupuestoBtn.style.display = "";
