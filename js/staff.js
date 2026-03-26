@@ -73,29 +73,6 @@ function getStaffSource(evento) {
 }
 
 // ===============================
-// AVISO MODAL
-// ===============================
-window.mostrarAvisoStaff = function (titulo, mensaje, icono = "⚠️", mostrarBoton = true) {
-  const modal = document.getElementById("modalAvisoSimple");
-  const tituloEl = document.getElementById("modalAvisoTitulo");
-  const mensajeEl = document.getElementById("modalAvisoMensaje");
-  const iconoEl = document.getElementById("modalAvisoIcono");
-  const btnEntendido = document.getElementById("btnCerrarAvisoSimple");
-
-  if (!modal || !tituloEl || !mensajeEl || !iconoEl) return;
-
-  tituloEl.textContent = titulo;
-  mensajeEl.innerHTML = mensaje;
-  iconoEl.textContent = icono;
-
-  if (btnEntendido) {
-    btnEntendido.style.display = mostrarBoton ? "inline-block" : "none";
-  }
-
-  modal.style.display = "flex";
-};
-
-// ===============================
 // STAFF GENERAL (ABM)
 // ===============================
 export async function guardarMozo() {

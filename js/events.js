@@ -401,21 +401,7 @@ function updateStats(events) {
 // ===============================
 // AVISO MODAL
 // ===============================
-window.mostrarAvisoSimple = function (titulo, mensaje, icono = "⚠️", mostrarBotonEntendido = true) {
-  const modal = document.getElementById("modalAvisoSimple");
-  const tituloEl = document.getElementById("modalAvisoTitulo");
-  const mensajeEl = document.getElementById("modalAvisoMensaje");
-  const iconoEl = document.getElementById("modalAvisoIcono");
-  const btnEntendido = document.getElementById("btnCerrarAvisoSimple");
 
-  if (!modal || !tituloEl || !mensajeEl || !iconoEl) return;
-
-  tituloEl.textContent = titulo;
-  mensajeEl.innerHTML = mensaje;
-  iconoEl.textContent = icono;
-  if (btnEntendido) btnEntendido.style.display = mostrarBotonEntendido ? "inline-block" : "none";
-  modal.style.display = "flex";
-};
 const mostrarAvisoSimple = window.mostrarAvisoSimple;
 
 function cerrarAvisoSimple() {
