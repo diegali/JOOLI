@@ -13,6 +13,10 @@ import {
 let catalogoBase = [];
 let pestanaActiva = "checklist"; // "checklist" | "catalogo"
 
+// ---- COCINA ----
+let catalogoBaseCocina = [];
+let pestanaActivaCocina = "checklist"; // "checklist" | "catalogo"
+
 function agruparPorCategoria(items = []) {
   const grupos = {};
   items.forEach((item) => {
@@ -21,6 +25,29 @@ function agruparPorCategoria(items = []) {
     grupos[categoria].push(item);
   });
   return grupos;
+}
+
+function ocultarDetalleTemporalmente() {
+  const modalDetalle = document.getElementById("modalDetalleEvento");
+  if (!modalDetalle) return;
+
+  const estaAbierto = modalDetalle.style.display === "flex";
+  if (!estaAbierto) return;
+
+  modalDetalle.dataset.ocultoPorChecklist = "true";
+  modalDetalle.style.visibility = "hidden";
+  modalDetalle.style.pointerEvents = "none";
+}
+
+function restaurarDetalleSiHaceFalta() {
+  const modalDetalle = document.getElementById("modalDetalleEvento");
+  if (!modalDetalle) return;
+
+  if (modalDetalle.dataset.ocultoPorChecklist === "true") {
+    modalDetalle.style.visibility = "visible";
+    modalDetalle.style.pointerEvents = "auto";
+    delete modalDetalle.dataset.ocultoPorChecklist;
+  }
 }
 
 function renderCatalogoHTML({
@@ -115,6 +142,11 @@ export function initLista() {
   initChecklistDelegado();
   initControlesListaDelegados();
   cargarCatalogo();
+
+  initCatalogoCocinaDelegate();
+  initChecklistCocinaDelegate();
+  initControlesCocinaDelegate();
+  cargarCatalogoCocina();
 }
 
 function cargarCatalogo() {
@@ -236,6 +268,10 @@ window.abrirModalChecklist = function (eventId) {
   }
 
   actualizarPestanas();
+  const selector = document.getElementById("modalSelectorChecklist");
+  if (selector) selector.style.display = "none";
+
+  ocultarDetalleTemporalmente();
   document.getElementById("modalChecklist").style.display = "flex";
 };
 
@@ -243,13 +279,7 @@ window.cerrarModalChecklist = function () {
   const modal = document.getElementById("modalChecklist");
   if (modal) modal.style.display = "none";
 
-  if (
-    window._detalleEventoAbierto &&
-    typeof window.abrirModalDetalle === "function"
-  ) {
-    window.abrirModalDetalle(window._detalleEventoAbierto);
-  }
-
+  restaurarDetalleSiHaceFalta();
   window.eventoChecklistActual = null;
 };
 
@@ -697,6 +727,583 @@ async function confirmarEliminarCatalogo(itemId) {
 }
 
 window.confirmarEliminarCatalogo = confirmarEliminarCatalogo;
+
+// ===============================
+// SELECTOR DE CHECKLIST
+// ===============================
+window.abrirSelectorChecklist = function () {
+  ocultarDetalleTemporalmente();
+
+  const modal = document.getElementById("modalSelectorChecklist");
+  if (modal) modal.style.display = "flex";
+};
+
+window.cerrarSelectorChecklist = function () {
+  const modal = document.getElementById("modalSelectorChecklist");
+  if (modal) modal.style.display = "none";
+
+  restaurarDetalleSiHaceFalta();
+};
+
+window.elegirChecklist = function (tipo) {
+  const selector = document.getElementById("modalSelectorChecklist");
+  if (selector) selector.style.display = "none";
+
+  const eventId = window._detalleEventoAbierto;
+  if (!eventId) return;
+
+  if (tipo === "general") {
+    window.abrirModalChecklist(eventId);
+  } else {
+    window.abrirModalChecklistCocina(eventId);
+  }
+};
+
+// ===============================
+// CHECKLIST COCINA — DELEGADOS
+// ===============================
+let catalogoCocinaDelegate = false;
+function initCatalogoCocinaDelegate() {
+  if (catalogoCocinaDelegate) return;
+  const modal = document.getElementById("modalChecklistCocina");
+  if (!modal) return;
+
+  modal.addEventListener("click", async (e) => {
+    const btnAgregar = e.target.closest('[data-action="agregar-catalogo-cocina"]');
+    if (btnAgregar) {
+      const nombre = btnAgregar.dataset.nombre || "";
+      const categoria = btnAgregar.dataset.categoria || "";
+      if (nombre) await agregarChecklistCocinaItem(nombre, categoria);
+      return;
+    }
+    const btnEliminar = e.target.closest('[data-action="eliminar-catalogo-cocina"]');
+    if (btnEliminar) {
+      const id = btnEliminar.dataset.id || "";
+      if (id) eliminarDelCatalogoCocina(id);
+    }
+  });
+
+  catalogoCocinaDelegate = true;
+}
+
+let checklistCocinaDelegate = false;
+function initChecklistCocinaDelegate() {
+  if (checklistCocinaDelegate) return;
+  const modal = document.getElementById("modalChecklistCocina");
+  if (!modal) return;
+
+  modal.addEventListener("click", async (e) => {
+    const toggleBtn = e.target.closest('[data-action="toggle-checklist-cocina"]');
+    if (toggleBtn && toggleBtn.dataset.index !== undefined) {
+      await toggleChecklistCocinaItem(Number(toggleBtn.dataset.index));
+      return;
+    }
+    const eliminarBtn = e.target.closest('[data-action="eliminar-checklist-cocina"]');
+    if (eliminarBtn && eliminarBtn.dataset.index !== undefined) {
+      await eliminarChecklistCocinaItem(Number(eliminarBtn.dataset.index));
+    }
+  });
+
+  modal.addEventListener("change", async (e) => {
+    const cantidadInput = e.target.closest('[data-action="cantidad-checklist-cocina"]');
+    if (cantidadInput && cantidadInput.dataset.index !== undefined) {
+      await cambiarCantidadChecklistCocina(Number(cantidadInput.dataset.index), cantidadInput.value);
+    }
+  });
+
+  checklistCocinaDelegate = true;
+}
+
+let controlesCocinaDelegate = false;
+function initControlesCocinaDelegate() {
+  if (controlesCocinaDelegate) return;
+  const modal = document.getElementById("modalChecklistCocina");
+  if (!modal) return;
+
+  modal.addEventListener("input", (e) => {
+    const buscarInput = e.target.closest('[data-action="buscar-catalogo-cocina"]');
+    if (buscarInput) filtrarCatalogoUICocina();
+  });
+
+  modal.addEventListener("change", (e) => {
+    const selectCategoria = e.target.closest('[data-action="change-categoria-cocina"]');
+    if (selectCategoria) onCategoriaChangeCocina();
+  });
+
+  modal.addEventListener("click", async (e) => {
+    const btnAgregarBase = e.target.closest('[data-action="agregar-catalogo-base-cocina"]');
+    if (btnAgregarBase) {
+      await agregarAlCatalogoCocina();
+      return;
+    }
+    const btnPdf = e.target.closest('[data-action="pdf-checklist-cocina"]');
+    if (btnPdf) window.generarPDFChecklistCocina();
+  });
+
+  controlesCocinaDelegate = true;
+}
+
+// ===============================
+// CHECKLIST COCINA — CATÁLOGO
+// ===============================
+function cargarCatalogoCocina() {
+  const q = query(
+    collection(db, "catalogoChecklistCocina"),
+    orderBy("categoria"),
+    orderBy("nombre")
+  );
+  onSnapshot(q, (snap) => {
+    catalogoBaseCocina = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    const modal = document.getElementById("modalChecklistCocina");
+    if (modal && modal.style.display === "flex") {
+      if (pestanaActivaCocina === "catalogo") {
+        renderPestanaCatalogoCocina();
+      } else {
+        renderPestanaChecklistCocina();
+      }
+    }
+  });
+}
+
+function filtrarCatalogoUICocina() {
+  const term = document.getElementById("buscarCatalogoCocina")?.value.toLowerCase().trim() || "";
+  document.querySelectorAll("#checklistCocinaContenido .catalogo-grupo").forEach((grupo) => {
+    let hayVisibles = false;
+    grupo.querySelectorAll(".catalogo-item").forEach((el) => {
+      const nombre = el.querySelector(".catalogo-item-nombre")?.textContent.toLowerCase() || "";
+      const visible = nombre.includes(term);
+      el.style.display = visible ? "" : "none";
+      if (visible) hayVisibles = true;
+    });
+    grupo.style.display = hayVisibles ? "" : "none";
+  });
+}
+
+// ===============================
+// CHECKLIST COCINA — ABRIR/CERRAR
+// ===============================
+window.abrirModalChecklistCocina = function (eventId) {
+  const evento = window.allEventsData.find((e) => e.id === eventId);
+  if (!evento) return;
+
+  if (!evento.checklistCocina) evento.checklistCocina = [];
+
+  window.eventoChecklistCocinaActual = evento;
+
+  const today = new Date().toLocaleDateString("sv").split("T")[0];
+  window.checklistCocinaSoloLectura = evento.date < today;
+
+  pestanaActivaCocina = "checklist";
+
+  const titulo = document.getElementById("tituloModalChecklistCocina");
+  if (titulo) {
+    const fecha = evento.date
+      ? new Date(evento.date + "T00:00:00").toLocaleDateString("es-AR")
+      : "";
+    titulo.innerText = `🍳 ${fecha} · ${evento.client}`;
+  }
+
+  actualizarPestanasCocina();
+  const selector = document.getElementById("modalSelectorChecklist");
+  if (selector) selector.style.display = "none";
+
+  ocultarDetalleTemporalmente();
+  document.getElementById("modalChecklistCocina").style.display = "flex";
+};
+
+window.cerrarModalChecklistCocina = function () {
+  const modal = document.getElementById("modalChecklistCocina");
+  if (modal) modal.style.display = "none";
+
+  restaurarDetalleSiHaceFalta();
+  window.eventoChecklistCocinaActual = null;
+};
+
+window.cambiarPestanaChecklistCocina = function (cual) {
+  pestanaActivaCocina = cual;
+  actualizarPestanasCocina();
+};
+
+function actualizarPestanasCocina() {
+  const btnChecklist = document.getElementById("tabBtnChecklistCocina");
+  const btnCatalogo = document.getElementById("tabBtnCatalogoCocina");
+
+  if (btnChecklist) btnChecklist.classList.toggle("tab-btn--active", pestanaActivaCocina === "checklist");
+  if (btnCatalogo) {
+    btnCatalogo.style.display = window.checklistCocinaSoloLectura ? "none" : "";
+    btnCatalogo.classList.toggle("tab-btn--active", pestanaActivaCocina === "catalogo");
+  }
+
+  if (pestanaActivaCocina === "checklist") {
+    renderPestanaChecklistCocina();
+  } else {
+    renderPestanaCatalogoCocina();
+  }
+}
+
+// ===============================
+// CHECKLIST COCINA — PESTAÑA 1
+// ===============================
+function renderPestanaChecklistCocina() {
+  const cont = document.getElementById("checklistCocinaContenido");
+  if (!cont) return;
+
+  const evento = window.eventoChecklistCocinaActual;
+  if (!evento) return;
+
+  const checklist = evento.checklistCocina || [];
+  const total = checklist.length;
+  const preparados = checklist.filter((i) => i.preparado).length;
+  const porcentaje = total > 0 ? Math.round((preparados / total) * 100) : 0;
+
+  let html = `
+    <div class="checklist-progreso">
+      <div class="checklist-progreso-texto">
+        <span>🍳 Preparado: ${preparados} / ${total}</span>
+        <div style="display:flex; align-items:center; gap:10px;">
+          <span>${porcentaje}%</span>
+          <button type="button" class="btn-pdf-checklist" data-action="pdf-checklist-cocina">📄 PDF</button>
+        </div>
+      </div>
+      <div class="checklist-progreso-barra">
+        <div class="checklist-progreso-fill" style="width:${porcentaje}%"></div>
+      </div>
+    </div>
+  `;
+
+  if (total === 0) {
+    html += `<p class="checklist-vacio">No hay ítems en este checklist todavía.<br>Agregá desde el catálogo 👇</p>`;
+  } else {
+    const grupos = agruparPorCategoria(checklist);
+    Object.entries(grupos).forEach(([categoria, items]) => {
+      html += `<div class="checklist-grupo"><div class="checklist-categoria">${categoria}</div>`;
+      items.forEach((item) => {
+        const index = checklist.indexOf(item);
+        const soloLectura = window.checklistCocinaSoloLectura;
+        html += `
+          <div class="checklist-item ${item.preparado ? "checklist-item--listo" : ""}">
+            <input type="checkbox" class="checklist-check"
+              data-action="toggle-checklist-cocina" data-index="${index}"
+              ${item.preparado ? "checked" : ""} ${soloLectura ? "disabled" : ""}>
+            <span class="checklist-nombre"
+              ${soloLectura ? "" : `data-action="toggle-checklist-cocina" data-index="${index}"`}>
+              ${item.nombre}
+            </span>
+            <input type="number" class="checklist-cantidad"
+              data-action="cantidad-checklist-cocina" data-index="${index}"
+              value="${item.cantidad}" min="1" ${soloLectura ? "disabled" : ""}>
+            ${soloLectura ? "" : `<button type="button" class="checklist-btn-quitar"
+              data-action="eliminar-checklist-cocina" data-index="${index}">✕</button>`}
+          </div>
+        `;
+      });
+      html += `</div>`;
+    });
+  }
+
+  if (!window.checklistCocinaSoloLectura) {
+    html += `
+      <div class="checklist-agregar-titulo">➕ Agregar del catálogo</div>
+      <div class="catalogo-buscar">
+        <input type="text" id="buscarCatalogoCocina" placeholder="🔍 Buscar ítem..."
+          class="catalogo-buscar-input" data-action="buscar-catalogo-cocina">
+      </div>
+    `;
+    html += renderCatalogoHTML({
+      items: catalogoBaseCocina,
+      emptyMessage: 'El catálogo está vacío. Añadí ítems desde la pestaña <strong>Catálogo base</strong>.',
+      renderItem: (item) => {
+        const yaAgregado = checklist.some((i) => i.nombre === item.nombre);
+        return `
+          <div class="catalogo-item ${yaAgregado ? "catalogo-item--agregado" : ""}">
+            <span class="catalogo-item-nombre">${item.nombre}</span>
+            <button type="button"
+              class="btn-agregar-item ${yaAgregado ? "btn-agregar-item--ya" : ""}"
+              data-action="agregar-catalogo-cocina"
+              data-nombre="${item.nombre}" data-categoria="${item.categoria || ""}"
+              ${yaAgregado ? "disabled" : ""}>
+              ${yaAgregado ? "✔ Agregado" : "Agregar"}
+            </button>
+          </div>
+        `;
+      },
+    });
+  }
+
+  cont.innerHTML = html;
+}
+
+// ===============================
+// CHECKLIST COCINA — PESTAÑA 2
+// ===============================
+function renderPestanaCatalogoCocina() {
+  const cont = document.getElementById("checklistCocinaContenido");
+  if (!cont) return;
+
+  const categoriasExistentes = [...new Set(catalogoBaseCocina.map((i) => i.categoria))].sort();
+  const opcionesSelect = categoriasExistentes.map((c) => `<option value="${c}">${c}</option>`).join("");
+
+  let html = `
+    <div class="catalogo-buscar">
+      <input type="text" id="buscarCatalogoCocina" placeholder="🔍 Buscar ítem..."
+        class="catalogo-buscar-input" data-action="buscar-catalogo-cocina">
+    </div>
+    <div class="catalogo-nuevo">
+      <div class="catalogo-nuevo-titulo">Nuevo ítem</div>
+      <div class="catalogo-nuevo-fila">
+        <input type="text" id="nuevoItemNombreCocina" placeholder="Nombre del ítem"
+          class="catalogo-nuevo-input catalogo-nuevo-input--nombre">
+        <select id="selectCategoriaCocina" class="catalogo-nuevo-input catalogo-nuevo-input--cat"
+          data-action="change-categoria-cocina">
+          ${categoriasExistentes.length > 0
+      ? `<option value="">-- Elegir categoría --</option>${opcionesSelect}`
+      : `<option value="">-- Sin categorías aún --</option>`}
+          <option value="__nueva__">➕ Nueva categoría...</option>
+        </select>
+        <input type="text" id="nuevoItemCategoriaCocina" placeholder="Nombre de la nueva categoría"
+          class="catalogo-nuevo-input catalogo-nuevo-input--cat catalogo-nueva-cat-input"
+          style="display:none;">
+        <button type="button" class="btn-catalogo-agregar" data-action="agregar-catalogo-base-cocina">
+          + Agregar
+        </button>
+      </div>
+    </div>
+  `;
+
+  html += renderCatalogoHTML({
+    items: catalogoBaseCocina,
+    emptyMessage: "El catálogo está vacío. ¡Agregá el primer ítem!",
+    renderItem: (item) => `
+      <div class="catalogo-item">
+        <span class="catalogo-item-nombre">${item.nombre}</span>
+        <button type="button" class="btn-catalogo-eliminar"
+          data-action="eliminar-catalogo-cocina" data-id="${item.id}">🗑</button>
+      </div>
+    `,
+  });
+
+  cont.innerHTML = html;
+}
+
+// ===============================
+// CHECKLIST COCINA — ACCIONES
+// ===============================
+async function agregarChecklistCocinaItem(nombre, categoria) {
+  const evento = window.eventoChecklistCocinaActual;
+  if (!evento) return;
+  if (!evento.checklistCocina) evento.checklistCocina = [];
+  if (evento.checklistCocina.some((i) => i.nombre === nombre)) return;
+
+  evento.checklistCocina.push({ nombre, categoria, cantidad: 1, preparado: false });
+  await guardarChecklistCocinaEnFirestore(evento);
+  renderPestanaChecklistCocina();
+}
+
+async function toggleChecklistCocinaItem(index) {
+  const evento = window.eventoChecklistCocinaActual;
+  if (!evento || !evento.checklistCocina?.[index]) return;
+  evento.checklistCocina[index].preparado = !evento.checklistCocina[index].preparado;
+  await guardarChecklistCocinaEnFirestore(evento);
+  renderPestanaChecklistCocina();
+}
+
+async function cambiarCantidadChecklistCocina(index, valor) {
+  const evento = window.eventoChecklistCocinaActual;
+  if (!evento || !evento.checklistCocina?.[index]) return;
+  evento.checklistCocina[index].cantidad = Number(valor) || 1;
+  await guardarChecklistCocinaEnFirestore(evento);
+}
+
+async function eliminarChecklistCocinaItem(index) {
+  const evento = window.eventoChecklistCocinaActual;
+  if (!evento || !evento.checklistCocina) return;
+  evento.checklistCocina.splice(index, 1);
+  await guardarChecklistCocinaEnFirestore(evento);
+  renderPestanaChecklistCocina();
+}
+
+async function guardarChecklistCocinaEnFirestore(evento) {
+  if (!evento?.id) return;
+  try {
+    await updateDoc(doc(db, "events", evento.id), {
+      checklistCocina: evento.checklistCocina || [],
+    });
+    const index = window.allEventsData.findIndex((e) => e.id === evento.id);
+    if (index !== -1) {
+      window.allEventsData[index].checklistCocina = [...(evento.checklistCocina || [])];
+    }
+    if (window.eventoChecklistCocinaActual?.id === evento.id) {
+      window.eventoChecklistCocinaActual.checklistCocina = [...(evento.checklistCocina || [])];
+    }
+  } catch (error) {
+    console.error("Error al guardar checklist cocina:", error);
+  }
+}
+
+// ===============================
+// CHECKLIST COCINA — CATÁLOGO BASE
+// ===============================
+async function agregarAlCatalogoCocina() {
+  const nombreEl = document.getElementById("nuevoItemNombreCocina");
+  const selectEl = document.getElementById("selectCategoriaCocina");
+  const nuevaCatEl = document.getElementById("nuevoItemCategoriaCocina");
+
+  const nombre = nombreEl?.value.trim().toUpperCase();
+
+  let categoria;
+  if (selectEl?.value === "__nueva__") {
+    categoria = nuevaCatEl?.value.trim().toUpperCase();
+    if (!categoria) {
+      window.mostrarAvisoSimple("Faltan datos", "Escribí el nombre de la nueva categoría.", "⚠️");
+      return;
+    }
+  } else {
+    categoria = selectEl?.value;
+    if (!categoria) {
+      window.mostrarAvisoSimple("Faltan datos", "Elegí o creá una categoría.", "⚠️");
+      return;
+    }
+  }
+
+  if (!nombre) {
+    window.mostrarAvisoSimple("Faltan datos", "Escribí el nombre del ítem.", "⚠️");
+    return;
+  }
+
+  const yaExiste = catalogoBaseCocina.some((i) => i.nombre.toLowerCase() === nombre.toLowerCase());
+  if (yaExiste) {
+    window.mostrarAvisoSimple("Ítem duplicado", `<strong>${nombre}</strong> ya existe en el catálogo.`, "⚠️");
+    return;
+  }
+
+  try {
+    await addDoc(collection(db, "catalogoChecklistCocina"), { nombre, categoria });
+    if (nombreEl) nombreEl.value = "";
+    if (nuevaCatEl) nuevaCatEl.value = "";
+    if (selectEl) selectEl.value = "";
+    onCategoriaChangeCocina();
+  } catch (e) {
+    console.error("Error al agregar al catálogo cocina:", e);
+  }
+}
+
+function onCategoriaChangeCocina() {
+  const selectEl = document.getElementById("selectCategoriaCocina");
+  const nuevaCatEl = document.getElementById("nuevoItemCategoriaCocina");
+  if (!nuevaCatEl) return;
+  const mostrarNueva = selectEl?.value === "__nueva__";
+  nuevaCatEl.style.display = mostrarNueva ? "block" : "none";
+  if (!mostrarNueva) nuevaCatEl.value = "";
+}
+
+function eliminarDelCatalogoCocina(itemId) {
+  window.mostrarAvisoSimple(
+    "¿Eliminar ítem?",
+    "¿Seguro que querés eliminarlo del catálogo de cocina?<br><br>" +
+    `<button onclick="window.confirmarEliminarCatalogoCocina('${itemId}')" class="btn-aviso-confirmar">Sí, eliminar</button>` +
+    `<button onclick="document.getElementById('modalAvisoSimple').style.display='none'" class="btn-aviso-cancelar">Cancelar</button>`,
+    "🗑",
+    false
+  );
+}
+
+async function confirmarEliminarCatalogoCocina(itemId) {
+  document.getElementById("modalAvisoSimple").style.display = "none";
+  try {
+    await deleteDoc(doc(db, "catalogoChecklistCocina", itemId));
+  } catch (e) {
+    console.error("Error al eliminar del catálogo cocina:", e);
+  }
+}
+
+window.confirmarEliminarCatalogoCocina = confirmarEliminarCatalogoCocina;
+
+// ===============================
+// CHECKLIST COCINA — PDF
+// ===============================
+window.generarPDFChecklistCocina = function () {
+  const evento = window.eventoChecklistCocinaActual;
+  if (!evento) return;
+
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF();
+
+  const checklist = evento.checklistCocina || [];
+  const total = checklist.length;
+  const preparados = checklist.filter((i) => i.preparado).length;
+
+  pdf.setFontSize(18);
+  pdf.setFont("helvetica", "bold");
+  pdf.text("JOOLI Catering", 105, 20, { align: "center" });
+
+  pdf.setFontSize(13);
+  pdf.setFont("helvetica", "normal");
+  pdf.text("Checklist de cocina", 105, 28, { align: "center" });
+
+  pdf.setFontSize(11);
+  pdf.setFont("helvetica", "bold");
+  const fecha = evento.date
+    ? new Date(evento.date + "T00:00:00").toLocaleDateString("es-AR")
+    : "";
+  pdf.text(`${evento.client || ""}  ·  ${fecha}`, 105, 38, { align: "center" });
+
+  pdf.setFont("helvetica", "normal");
+  pdf.setFontSize(10);
+  pdf.text(`Preparado: ${preparados} / ${total}`, 14, 48);
+
+  pdf.setDrawColor(212, 175, 55);
+  pdf.setLineWidth(0.5);
+  pdf.line(14, 52, 196, 52);
+
+  if (total === 0) {
+    pdf.setFontSize(11);
+    pdf.text("No hay ítems en este checklist.", 105, 65, { align: "center" });
+  } else {
+    const grupos = agruparPorCategoria(checklist);
+    let y = 60;
+
+    Object.entries(grupos).forEach(([categoria, items]) => {
+      if (y > 270) { pdf.addPage(); y = 20; }
+      pdf.setFontSize(10);
+      pdf.setFont("helvetica", "bold");
+      pdf.setTextColor(22, 160, 133);
+      pdf.text(categoria, 14, y);
+      y += 6;
+      pdf.setTextColor(0, 0, 0);
+
+      items.forEach((item) => {
+        if (y > 275) { pdf.addPage(); y = 20; }
+        pdf.setDrawColor(150, 150, 150);
+        pdf.setLineWidth(0.3);
+        pdf.rect(14, y - 4, 5, 5);
+        if (item.preparado) {
+          pdf.setDrawColor(39, 174, 96);
+          pdf.setLineWidth(0.8);
+          pdf.line(15, y - 1.5, 16.5, y);
+          pdf.line(16.5, y, 18.5, y - 3.5);
+        }
+        pdf.setFont("helvetica", item.preparado ? "italic" : "normal");
+        pdf.setFontSize(10);
+        pdf.setTextColor(item.preparado ? 150 : 0, item.preparado ? 150 : 0, item.preparado ? 150 : 0);
+        pdf.text(`${item.nombre}`, 22, y);
+        pdf.setFont("helvetica", "normal");
+        pdf.setTextColor(100, 100, 100);
+        pdf.text(`x${item.cantidad || 1}`, 180, y, { align: "right" });
+        pdf.setTextColor(0, 0, 0);
+        y += 8;
+      });
+      y += 4;
+    });
+  }
+
+  pdf.setFontSize(8);
+  pdf.setTextColor(150, 150, 150);
+  pdf.text(`Generado por JOOLI CateringDesk · ${new Date().toLocaleDateString("es-AR")}`, 105, 290, { align: "center" });
+
+  const pdfBlob = pdf.output("blob");
+  const url = URL.createObjectURL(pdfBlob);
+  window.open(url, "_blank");
+};
 
 // ===============================
 // ACCIONES — CHECKLIST DEL EVENTO

@@ -346,13 +346,13 @@ export function registerEventDetailModal(deps) {
             if (total === 0) return `
                   <div class="detail-inline-accion">
                     <div>📦 Sin checklist armado</div>
-                    <button onclick="window.cerrarModalDetalle(); window.abrirModalChecklist('${eventoId}')" class="btn-detail-inline">Armar</button>
+                    <button onclick="window.cerrarModalDetalle(); window._detalleEventoAbierto='${eventoId}'; window.abrirSelectorChecklist()" class="btn-detail-inline">Armar</button>
                   </div>`;
             const color = preparados === total ? "#27ae60" : preparados === 0 ? "#c0392b" : "#e67e22";
             return `
                   <div class="detail-inline-accion">
                     <div>📦 <span style="color:${color}; font-weight:600;">${preparados}/${total} ítems preparados</span></div>
-                    <button onclick="window.abrirModalChecklist('${eventoId}')" class="btn-detail-inline">Ver</button>
+                    <button onclick="window._detalleEventoAbierto='${eventoId}'; window.abrirSelectorChecklist()" class="btn-detail-inline">Ver</button>
                   </div>`;
           })()}
             </div>

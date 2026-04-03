@@ -507,9 +507,13 @@ export function initEvents() {
   });
 
   document.getElementById("btnGestionarChecklist")?.addEventListener("click", () => {
-    editingId
-      ? window.abrirModalChecklist(editingId)
-      : mostrarAvisoSimple("Para gestionar la checklist, primero guarda el evento.", "⚠️");
+    if (!editingId) {
+      mostrarAvisoSimple("Para gestionar la checklist, primero guardá el evento.", "⚠️");
+      return;
+    }
+
+    window._detalleEventoAbierto = editingId;
+    window.abrirSelectorChecklist();
   });
 
   // Filtros

@@ -40,7 +40,36 @@
 
 .modal-box--checklist {
   max-width: 600px;
-  padding: 24px 20px 20px;
+  padding: 0 0 20px 0;
+  overflow: hidden;
+}
+
+.modal-box--checklist .modal-checklist-header {
+  padding: 20px 20px 16px 20px;
+}
+
+.modal-box--checklist .tab-bar,
+.modal-box--checklist .checklist-contenido {
+  padding-left: 20px;
+  padding-right: 20px;
+}
+
+.modal-box--checklist--general {
+  border-top: 5px solid var(--gold);
+}
+
+.modal-box--checklist--general .modal-checklist-header {
+  background: linear-gradient(135deg, #fffaf0 0%, #fdf6e3 100%);
+  border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+}
+
+.modal-box--checklist--cocina {
+  border-top: 5px solid #e67e22;
+}
+
+.modal-box--checklist--cocina .modal-checklist-header {
+  background: linear-gradient(135deg, #fff7f0 0%, #fef0e3 100%);
+  border-bottom: 1px solid rgba(230, 126, 34, 0.2);
 }
 
 .modal-box--confirmar {

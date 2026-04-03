@@ -382,14 +382,94 @@
     </div>
   </div>
 
-  <!-- MODAL CHECKLIST -->
-  <div id="modalChecklist" class="modal-overlay modal-checklist">
-    <div class="modal-box modal-box--checklist">
+  <!-- MODAL SELECTOR DE CHECKLIST -->
+  <div id="modalSelectorChecklist" class="modal-overlay modal-aviso" style="display:none;">
+    <div class="modal-box modal-box--aviso modal-box--selector-checklist">
+
+      <div class="modal-aviso-icono">📦</div>
+      <h3 class="modal-aviso-titulo">Elegir checklist del evento</h3>
+
+      <p class="selector-checklist-subtitulo">
+        Seleccioná qué checklist querés gestionar
+      </p>
+
+      <div class="selector-checklist-opciones">
+
+        <button type="button" onclick="window.elegirChecklist('general')" class="selector-checklist-card">
+          <div class="selector-checklist-card__icono">📋</div>
+          <div class="selector-checklist-card__texto">
+            <div class="selector-checklist-card__titulo">Checklist general</div>
+            <div class="selector-checklist-card__desc">
+              Vajilla, mantelería, mobiliario, armado y servicio
+            </div>
+          </div>
+        </button>
+
+        <button type="button" onclick="window.elegirChecklist('cocina')"
+          class="selector-checklist-card selector-checklist-card--cocina">
+          <div class="selector-checklist-card__icono">🍳</div>
+          <div class="selector-checklist-card__texto">
+            <div class="selector-checklist-card__titulo">Checklist de cocina</div>
+            <div class="selector-checklist-card__desc">
+              Producción, insumos, mise en place y tareas de cocina
+            </div>
+          </div>
+        </button>
+
+      </div>
+
+      <button type="button" onclick="window.cerrarSelectorChecklist()" class="btn-selector-cancelar">
+        Cancelar
+      </button>
+    </div>
+  </div>
+
+  <!-- MODAL CHECKLIST COCINA -->
+  <div id="modalChecklistCocina" class="modal-overlay modal-checklist" style="display:none;">
+    <div class="modal-box modal-box--checklist modal-box--checklist--cocina">
 
       <!-- Cabecera -->
       <div class="modal-checklist-header">
-        <h3 id="tituloModalChecklist" class="modal-checklist-title">📦 Checklist</h3>
-        <button onclick="window.cerrarModalChecklist()" class="btn-close-modal btn-close-modal--abs">✕</button>
+        <div class="modal-checklist-header__top">
+          <div class="modal-checklist-label modal-checklist-label--cocina">🍳 Checklist de cocina</div>
+          <button onclick="window.cerrarModalChecklistCocina()"
+            class="btn-close-modal btn-close-modal--header">✕</button>
+        </div>
+        <h3 id="tituloModalChecklistCocina" class="modal-checklist-title"></h3>
+      </div>
+
+      <!-- Pestañas -->
+      <div class="tab-bar">
+        <button id="tabBtnChecklistCocina" class="tab-btn tab-btn--active"
+          onclick="window.cambiarPestanaChecklistCocina('checklist')">
+          ✅ Checklist del evento
+        </button>
+        <button id="tabBtnCatalogoCocina" class="tab-btn" onclick="window.cambiarPestanaChecklistCocina('catalogo')">
+          📋 Catálogo base
+        </button>
+      </div>
+
+      <!-- Contenido dinámico -->
+      <div id="checklistCocinaContenido" class="checklist-contenido"></div>
+
+    </div>
+  </div>
+
+  <!-- MODAL CHECKLIST -->
+  <div id="modalChecklist" class="modal-overlay modal-checklist">
+    <div class="modal-box modal-box--checklist modal-box--checklist--general">
+
+      <!-- Cabecera -->
+      <div class="modal-checklist-header">
+        <div class="modal-checklist-header__top">
+          <div class="modal-checklist-label">Checklist general</div>
+
+          <button onclick="window.cerrarModalChecklist()" class="btn-close-modal btn-close-modal--header">✕</button>
+        </div>
+
+        <h3 id="tituloModalChecklist" class="modal-checklist-title">
+          8/4/2026 - PRUEBA
+        </h3>
       </div>
 
       <!-- Pestañas -->
@@ -441,7 +521,10 @@
       <div class="detalle-acciones">
         <button id="detalleEditarBtn" class="btn-detalle btn-detalle--editar"><span>✏️</span>Editar</button>
         <button id="detalleStaffBtn" class="btn-detalle btn-detalle--staff"><span>🤵</span>Staff</button>
-        <button id="detalleChecklistBtn" class="btn-detalle btn-detalle--checklist"><span>📦</span>Checklist</button>
+        <button id="detalleChecklistBtn" class="btn-detalle btn-detalle--checklist"
+          onclick="window.cerrarModalDetalle(); setTimeout(() => window.abrirSelectorChecklist(), 50)">
+          <span>📦</span>Checklist
+        </button>
         <button id="detalleDuplicarBtn" class="btn-detalle btn-detalle--duplicar"><span>📋</span>Duplicar</button>
         <button id="detalleEliminarBtn" class="btn-detalle btn-detalle--delete"><span>🗑</span>Eliminar</button>
         <button id="detallePresupuestoBtn" class="btn-detalle btn-detalle--presupuesto">
