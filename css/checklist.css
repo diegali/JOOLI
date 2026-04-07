@@ -548,24 +548,207 @@
   position: static;
   margin: 0;
 }
-
-/* ===== Label de tipo en encabezado de checklist ===== */
-.modal-checklist-label {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 12px;
-  border-radius: 999px;
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.3px;
-  background: rgba(212, 175, 55, 0.25);
-  color: #6b4f0a;
-  border: 1px solid rgba(212, 175, 55, 0.4);
+/* ===== Pestaña Cámara ===== */
+.camara-header {
+  margin-bottom: 16px;
 }
 
-.modal-checklist-label--cocina {
-  background: rgba(230, 126, 34, 0.2);
-  color: #8a3d08;
-  border: 1px solid rgba(230, 126, 34, 0.35);
+.camara-titulo {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1a1a2e;
+}
+
+.camara-subtitulo {
+  font-size: 0.82rem;
+  color: #888;
+  margin-top: 2px;
+}
+
+.camara-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.camara-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: #f9f9f9;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  flex-wrap: nowrap;
+}
+
+.camara-item-nombre {
+  flex: 1;
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  color: #222;
+  min-width: 100px;
+}
+
+.camara-item-controles {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-stock {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: none;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+}
+
+.btn-stock--sumar {
+  background: #e8f5e9;
+  color: #27ae60;
+}
+
+.btn-stock--sumar:hover {
+  background: #27ae60;
+  color: white;
+}
+
+.btn-stock--restar {
+  background: #fdecea;
+  color: #c0392b;
+}
+
+.btn-stock--restar:hover {
+  background: #c0392b;
+  color: white;
+}
+
+.camara-stock {
+  font-size: 1.1rem;
+  font-weight: 700;
+  min-width: 28px;
+  text-align: center;
+}
+
+.camara-stock--ok { color: #27ae60; }
+.camara-stock--bajo { color: #e67e22; }
+.camara-stock--vacio { color: #c0392b; }
+
+.camara-item-agregar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid #eee;
+}
+
+.camara-cantidad-input {
+  width: 60px;
+  height: 32px;
+  text-align: center;
+  padding: 0 4px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-base);
+}
+
+.btn-agregar-camara {
+  flex: 1;
+  padding: 6px 10px;
+  background: #e67e22;
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-agregar-camara:hover {
+  background: #d35400;
+  color: white;
+}
+
+.btn-agregar-camara:disabled {
+  background: #ddd;
+  color: #aaa;
+  cursor: not-allowed;
+}
+
+.camara-nuevo {
+  background: var(--bg);
+  border-radius: 10px;
+  padding: 14px;
+  margin-top: 8px;
+  border: 1px solid #e0dbd0;
+}
+
+.camara-nuevo-fila {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.camara-stock-badge {
+  font-size: 0.82rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.camara-cantidad-input--mini {
+  width: 58px;
+  height: 28px;
+  font-size: 13px;
+}
+
+.btn-camara-mini {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: none;
+  background: #e67e22;
+  color: white;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: 0;
+}
+
+.btn-camara-mini:hover {
+  background: #d35400;
+}
+
+.btn-camara-mini--ya {
+  background: #b2dfdb;
+  color: #555;
+  cursor: default;
+}
+
+.btn-camara-mini--ya:hover {
+  background: #b2dfdb;
+}
+
+.btn-camara-mini--sin-stock {
+  background: #ddd;
+  color: #aaa;
+  cursor: not-allowed;
+}
+
+.btn-camara-mini--sin-stock:hover {
+  background: #ddd;
 }

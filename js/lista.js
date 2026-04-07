@@ -15,7 +15,7 @@ let pestanaActiva = "checklist"; // "checklist" | "catalogo"
 
 // ---- COCINA ----
 let catalogoBaseCocina = [];
-let pestanaActivaCocina = "checklist"; // "checklist" | "catalogo"
+let pestanaActivaCocina = "checklist"; // "checklist" | "catalogo" | "camara"
 
 function agruparPorCategoria(items = []) {
   const grupos = {};
@@ -792,6 +792,20 @@ function initChecklistCocinaDelegate() {
   const modal = document.getElementById("modalChecklistCocina");
   if (!modal) return;
 
+  modal.addEventListener("change", async (e) => {
+    const cantidadInput = e.target.closest('[data-action="cantidad-checklist-cocina"]');
+    if (cantidadInput && cantidadInput.dataset.index !== undefined) {
+      await cambiarCantidadChecklistCocina(Number(cantidadInput.dataset.index), Number(cantidadInput.value));
+      return;
+    }
+    const stockDirecto = e.target.closest('[data-action="editar-stock-directo"]');
+    if (stockDirecto) {
+      const nuevoStock = Math.max(0, Number(stockDirecto.value) || 0);
+      await ajustarStockDirecto(stockDirecto.dataset.id, nuevoStock);
+      return;
+    }
+  });
+
   modal.addEventListener("click", async (e) => {
     const toggleBtn = e.target.closest('[data-action="toggle-checklist-cocina"]');
     if (toggleBtn && toggleBtn.dataset.index !== undefined) {
@@ -837,7 +851,35 @@ function initControlesCocinaDelegate() {
       return;
     }
     const btnPdf = e.target.closest('[data-action="pdf-checklist-cocina"]');
-    if (btnPdf) window.generarPDFChecklistCocina();
+    if (btnPdf) {
+      window.generarPDFChecklistCocina();
+      return;
+    }
+    const btnSumarStock = e.target.closest('[data-action="sumar-stock"]');
+    if (btnSumarStock) {
+      await ajustarStock(btnSumarStock.dataset.id, 1);
+      return;
+    }
+    const btnRestarStock = e.target.closest('[data-action="restar-stock"]');
+    if (btnRestarStock) {
+      await ajustarStock(btnRestarStock.dataset.id, -1);
+      return;
+    }
+    const btnGuardarStock = e.target.closest('[data-action="guardar-stock-nuevo"]');
+    if (btnGuardarStock) {
+      await guardarItemCamaraDesdeForm();
+      return;
+    }
+    const btnAgregarDesdeCamera = e.target.closest('[data-action="agregar-camara-al-checklist"]');
+    if (btnAgregarDesdeCamera) {
+      const id = btnAgregarDesdeCamera.dataset.id;
+      const nombre = btnAgregarDesdeCamera.dataset.nombre;
+      const categoria = btnAgregarDesdeCamera.dataset.categoria;
+      const cantidadInput = document.getElementById(`camara-cantidad-${id}`);
+      const cantidad = Number(cantidadInput?.value) || 1;
+      await agregarDesdeCamera(id, nombre, categoria, cantidad);
+      return;
+    }
   });
 
   controlesCocinaDelegate = true;
@@ -858,6 +900,8 @@ function cargarCatalogoCocina() {
     if (modal && modal.style.display === "flex") {
       if (pestanaActivaCocina === "catalogo") {
         renderPestanaCatalogoCocina();
+      } else if (pestanaActivaCocina === "camara") {
+        renderPestanaCamara();
       } else {
         renderPestanaChecklistCocina();
       }
@@ -927,17 +971,21 @@ window.cambiarPestanaChecklistCocina = function (cual) {
 function actualizarPestanasCocina() {
   const btnChecklist = document.getElementById("tabBtnChecklistCocina");
   const btnCatalogo = document.getElementById("tabBtnCatalogoCocina");
+  const btnCamara = document.getElementById("tabBtnCamaraCocina");
 
   if (btnChecklist) btnChecklist.classList.toggle("tab-btn--active", pestanaActivaCocina === "checklist");
   if (btnCatalogo) {
     btnCatalogo.style.display = window.checklistCocinaSoloLectura ? "none" : "";
     btnCatalogo.classList.toggle("tab-btn--active", pestanaActivaCocina === "catalogo");
   }
+  if (btnCamara) btnCamara.classList.toggle("tab-btn--active", pestanaActivaCocina === "camara");
 
   if (pestanaActivaCocina === "checklist") {
     renderPestanaChecklistCocina();
-  } else {
+  } else if (pestanaActivaCocina === "catalogo") {
     renderPestanaCatalogoCocina();
+  } else {
+    renderPestanaCamara();
   }
 }
 
@@ -1014,6 +1062,24 @@ function renderPestanaChecklistCocina() {
       emptyMessage: 'El catálogo está vacío. Añadí ítems desde la pestaña <strong>Catálogo base</strong>.',
       renderItem: (item) => {
         const yaAgregado = checklist.some((i) => i.nombre === item.nombre);
+        if (item.categoria === "CAMARA") {
+          const stock = item.stock || 0;
+          const stockClass = stock === 0 ? "camara-stock--vacio" : stock <= 3 ? "camara-stock--bajo" : "camara-stock--ok";
+          return `
+            <div class="catalogo-item ${yaAgregado ? "catalogo-item--agregado" : ""}">
+              <span class="catalogo-item-nombre">${item.nombre}</span>
+              <span class="camara-stock-badge ${stockClass}">🧊 ${stock}</span>
+              ${yaAgregado
+              ? `<span class="btn-camara-mini btn-camara-mini--ya">✔</span>`
+              : stock === 0
+                ? `<span class="btn-camara-mini btn-camara-mini--sin-stock">✕</span>`
+                : `<input type="number" id="camara-cantidad-${item.id}" class="camara-cantidad-input camara-cantidad-input--mini" value="1" min="1" max="${stock}">
+                   <button type="button" class="btn-camara-mini" data-action="agregar-camara-al-checklist"
+                     data-id="${item.id}" data-nombre="${item.nombre}" data-categoria="CAMARA">↑</button>`
+            }
+            </div>
+          `;
+        }
         return `
           <div class="catalogo-item ${yaAgregado ? "catalogo-item--agregado" : ""}">
             <span class="catalogo-item-nombre">${item.nombre}</span>
@@ -1040,7 +1106,10 @@ function renderPestanaCatalogoCocina() {
   const cont = document.getElementById("checklistCocinaContenido");
   if (!cont) return;
 
-  const categoriasExistentes = [...new Set(catalogoBaseCocina.map((i) => i.categoria))].sort();
+  const categoriasExistentes = [...new Set(catalogoBaseCocina.map((i) => i.categoria))]
+    .filter((c) => c !== "CAMARA")
+    .sort();
+  const catalogoSinCamara = catalogoBaseCocina.filter((i) => i.categoria !== "CAMARA");
   const opcionesSelect = categoriasExistentes.map((c) => `<option value="${c}">${c}</option>`).join("");
 
   let html = `
@@ -1071,7 +1140,7 @@ function renderPestanaCatalogoCocina() {
   `;
 
   html += renderCatalogoHTML({
-    items: catalogoBaseCocina,
+    items: catalogoSinCamara,
     emptyMessage: "El catálogo está vacío. ¡Agregá el primer ítem!",
     renderItem: (item) => `
       <div class="catalogo-item">
@@ -1088,13 +1157,66 @@ function renderPestanaCatalogoCocina() {
 // ===============================
 // CHECKLIST COCINA — ACCIONES
 // ===============================
-async function agregarChecklistCocinaItem(nombre, categoria) {
+
+async function cambiarCantidadChecklistCocina(index, nuevaCantidad) {
+  const evento = window.eventoChecklistCocinaActual;
+  if (!evento || !evento.checklistCocina) return;
+  const item = evento.checklistCocina[index];
+  if (!item) return;
+  if (!nuevaCantidad || nuevaCantidad < 1) return;
+
+  if (item.categoria === "CAMARA") {
+    const itemCamara = catalogoBaseCocina.find(
+      (i) => i.nombre === item.nombre && i.categoria === "CAMARA"
+    );
+    if (itemCamara) {
+      const cantidadAnterior = item.cantidad || 1;
+      const diferencia = nuevaCantidad - cantidadAnterior;
+      const stockActual = itemCamara.stock || 0;
+      if (diferencia > stockActual) {
+        window.mostrarAvisoSimple(
+          "Stock insuficiente",
+          `Solo hay <strong>${stockActual}</strong> unidad${stockActual !== 1 ? "es" : ""} disponible${stockActual !== 1 ? "s" : ""} de <strong>${item.nombre}</strong> en cámara.`,
+          "🧊"
+        );
+        renderPestanaChecklistCocina();
+        return;
+      }
+      await ajustarStock(itemCamara.id, -diferencia);
+    }
+  }
+
+  evento.checklistCocina[index].cantidad = nuevaCantidad;
+  await guardarChecklistCocinaEnFirestore(evento);
+  renderPestanaChecklistCocina();
+}
+
+async function agregarChecklistCocinaItem(nombre, categoria, cantidadSolicitada = 1) {
   const evento = window.eventoChecklistCocinaActual;
   if (!evento) return;
   if (!evento.checklistCocina) evento.checklistCocina = [];
   if (evento.checklistCocina.some((i) => i.nombre === nombre)) return;
 
-  evento.checklistCocina.push({ nombre, categoria, cantidad: 1, preparado: false });
+  // Si es ítem de cámara, verificar y descontar stock
+  if (categoria === "CAMARA") {
+    const itemCamara = catalogoBaseCocina.find(
+      (i) => i.nombre === nombre && i.categoria === "CAMARA"
+    );
+    if (itemCamara) {
+      const stockActual = itemCamara.stock || 0;
+      if (cantidadSolicitada > stockActual) {
+        window.mostrarAvisoSimple(
+          "Stock insuficiente",
+          `Solo hay <strong>${stockActual}</strong> unidad${stockActual !== 1 ? "es" : ""} de <strong>${nombre}</strong> en cámara.`,
+          "🧊"
+        );
+        return;
+      }
+      await ajustarStock(itemCamara.id, -cantidadSolicitada);
+    }
+  }
+
+  evento.checklistCocina.push({ nombre, categoria, cantidad: cantidadSolicitada, preparado: false });
   await guardarChecklistCocinaEnFirestore(evento);
   renderPestanaChecklistCocina();
 }
@@ -1107,16 +1229,22 @@ async function toggleChecklistCocinaItem(index) {
   renderPestanaChecklistCocina();
 }
 
-async function cambiarCantidadChecklistCocina(index, valor) {
-  const evento = window.eventoChecklistCocinaActual;
-  if (!evento || !evento.checklistCocina?.[index]) return;
-  evento.checklistCocina[index].cantidad = Number(valor) || 1;
-  await guardarChecklistCocinaEnFirestore(evento);
-}
-
 async function eliminarChecklistCocinaItem(index) {
   const evento = window.eventoChecklistCocinaActual;
   if (!evento || !evento.checklistCocina) return;
+
+  const item = evento.checklistCocina[index];
+
+  // Si era ítem de cámara, devolver stock
+  if (item && item.categoria === "CAMARA") {
+    const itemCamara = catalogoBaseCocina.find(
+      (i) => i.nombre === item.nombre && i.categoria === "CAMARA"
+    );
+    if (itemCamara) {
+      await ajustarStock(itemCamara.id, Number(item.cantidad) || 1);
+    }
+  }
+
   evento.checklistCocina.splice(index, 1);
   await guardarChecklistCocinaEnFirestore(evento);
   renderPestanaChecklistCocina();
@@ -1169,6 +1297,10 @@ async function agregarAlCatalogoCocina() {
     window.mostrarAvisoSimple("Faltan datos", "Escribí el nombre del ítem.", "⚠️");
     return;
   }
+  if (["CAMARA", "CÁMARA"].includes(categoria)) {
+    window.mostrarAvisoSimple("Categoría reservada", "Los ítems de cámara se agregan desde la pestaña 🧊 Cámara.", "🧊");
+    return;
+  }
 
   const yaExiste = catalogoBaseCocina.some((i) => i.nombre.toLowerCase() === nombre.toLowerCase());
   if (yaExiste) {
@@ -1217,6 +1349,127 @@ async function confirmarEliminarCatalogoCocina(itemId) {
 }
 
 window.confirmarEliminarCatalogoCocina = confirmarEliminarCatalogoCocina;
+
+// ===============================
+// CÁMARA — PESTAÑA Y LÓGICA
+// ===============================
+function renderPestanaCamara() {
+  const cont = document.getElementById("checklistCocinaContenido");
+  if (!cont) return;
+
+  const itemsCamara = catalogoBaseCocina.filter((i) => i.categoria === "CAMARA");
+
+  let html = `
+    <div class="camara-header">
+      <div class="camara-titulo">🧊 Stock de cámara</div>
+      <div class="camara-subtitulo">Tocá + / − para ajustar el stock disponible</div>
+    </div>
+  `;
+
+  if (itemsCamara.length === 0) {
+    html += `<p class="checklist-vacio">No hay ítems en cámara todavía.<br>Agregá ítems con categoría <strong>CAMARA</strong> desde el Catálogo base.</p>`;
+  } else {
+    html += `<div class="camara-lista">`;
+    itemsCamara.forEach((item) => {
+      const stock = item.stock || 0;
+      const stockClass = stock === 0 ? "camara-stock--vacio" : stock <= 3 ? "camara-stock--bajo" : "camara-stock--ok";
+      html += `
+        <div class="camara-item">
+          <div class="camara-item-nombre">${item.nombre}</div>
+          <div class="camara-item-controles">
+            <button type="button" class="btn-stock btn-stock--restar" data-action="restar-stock" data-id="${item.id}">−</button>
+            <input type="number" class="camara-stock ${stockClass}"
+              data-action="editar-stock-directo" data-id="${item.id}"
+              value="${stock}" min="0">
+            <button type="button" class="btn-stock btn-stock--sumar" data-action="sumar-stock" data-id="${item.id}">+</button>
+          </div>
+          ${!window.checklistCocinaSoloLectura ? `
+          <button type="button" class="btn-catalogo-eliminar"
+            data-action="eliminar-catalogo-cocina" data-id="${item.id}">🗑</button>` : ""}
+        </div>
+      `;
+    });
+    html += `</div>`;
+  }
+
+  // Formulario para agregar nuevo ítem a cámara directamente
+  if (!window.checklistCocinaSoloLectura) {
+    html += `
+      <div class="camara-nuevo">
+        <div class="catalogo-nuevo-titulo">Agregar ítem a cámara</div>
+        <div class="camara-nuevo-fila">
+          <input type="text" id="camaraNuevoNombre" placeholder="Nombre (ej: LOMO, POLLO...)"
+            class="catalogo-nuevo-input catalogo-nuevo-input--nombre">
+          <input type="number" id="camaraNuevoStock" placeholder="Cantidad" min="0"
+            class="catalogo-nuevo-input" style="max-width:90px;">
+          <button type="button" class="btn-catalogo-agregar" data-action="guardar-stock-nuevo">
+            + Agregar
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  cont.innerHTML = html;
+}
+
+async function ajustarStockDirecto(itemId, nuevoStock) {
+  try {
+    await updateDoc(doc(db, "catalogoChecklistCocina", itemId), { stock: nuevoStock });
+  } catch (e) {
+    console.error("Error al editar stock directo:", e);
+  }
+}
+
+async function ajustarStock(itemId, delta) {
+  const item = catalogoBaseCocina.find((i) => i.id === itemId);
+  if (!item) return;
+
+  const nuevoStock = Math.max(0, (item.stock || 0) + delta);
+  try {
+    await updateDoc(doc(db, "catalogoChecklistCocina", itemId), { stock: nuevoStock });
+    // La actualización llega por onSnapshot y re-renderiza automáticamente
+  } catch (e) {
+    console.error("Error al ajustar stock:", e);
+  }
+}
+
+async function agregarDesdeCamera(itemId, nombre, categoria, cantidad) {
+  await agregarChecklistCocinaItem(nombre, categoria, cantidad);
+}
+
+async function guardarItemCamaraDesdeForm() {
+  const nombreEl = document.getElementById("camaraNuevoNombre");
+  const stockEl = document.getElementById("camaraNuevoStock");
+
+  const nombre = nombreEl?.value.trim().toUpperCase();
+  const stock = Number(stockEl?.value) || 0;
+
+  if (!nombre) {
+    window.mostrarAvisoSimple("Faltan datos", "Escribí el nombre del ítem.", "⚠️");
+    return;
+  }
+
+  const yaExiste = catalogoBaseCocina.some(
+    (i) => i.nombre.toLowerCase() === nombre.toLowerCase() && i.categoria === "CAMARA"
+  );
+  if (yaExiste) {
+    window.mostrarAvisoSimple("Ítem duplicado", `<strong>${nombre}</strong> ya existe en cámara.`, "⚠️");
+    return;
+  }
+
+  try {
+    await addDoc(collection(db, "catalogoChecklistCocina"), {
+      nombre,
+      categoria: "CAMARA",
+      stock,
+    });
+    if (nombreEl) nombreEl.value = "";
+    if (stockEl) stockEl.value = "";
+  } catch (e) {
+    console.error("Error al agregar ítem a cámara:", e);
+  }
+}
 
 // ===============================
 // CHECKLIST COCINA — PDF

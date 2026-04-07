@@ -1,4 +1,4 @@
-const CACHE_NAME = "jooli-v2.2";
+const CACHE_NAME = "jooli-v2.3";
 
 const urlsToCache = [
   "/",
