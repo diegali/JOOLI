@@ -1,4 +1,4 @@
-# 🧠 CONTEXTO PARA IA – JOOLI CateringDesk (v7 — actualizado 08/04/2026)
+# 🧠 CONTEXTO PARA IA – JOOLI CateringDesk (v8 — actualizado 09/04/2026)
 
 > Pegá este archivo al inicio de cada chat nuevo para trabajar sin subir el proyecto.
 
@@ -79,7 +79,8 @@ js/
   calendar.js           ← calendario (FullCalendar)
   events.js             ← lógica principal de eventos
   staff.js              ← gestión de personal
-  lista.js              ← checklist y catálogo
+  lista.js              ← checklist general, catálogo y vajilla
+  lista-cocina.js       ← checklist cocina, cámara y panadería
   ui.js                 ← utilidades visuales menores
 
   events/               ← submódulos de eventos
@@ -196,6 +197,23 @@ export const USUARIOS_MAP = {
 - Catálogo y checklist están separados visualmente en dos bloques: **Checklist del evento** y **Catálogo disponible**
 - Los títulos de bloques, tabs y nombres de ítems del checklist usan una tipografía más angosta (`Roboto Condensed`) para aprovechar mejor el espacio en celular
 
+### Checklist general — pestaña 🍽 Vajilla
+- Muestra ítems de categoría `VAJILLA` del catálogo general (`catalogoChecklist`) con su stock
+- Stock editable con botones `+` / `−` y también con input numérico directo (`ajustarStockVajillaDirecto()`)
+- El número de stock se muestra en rojo si llega a 0, naranja si tiene 3 o menos, verde si hay más
+- Botón 🗑 para eliminar un ítem de vajilla (desde esta pestaña)
+- Formulario al pie para agregar nuevos ítems a vajilla con cantidad inicial
+- Los ítems de `VAJILLA` aparecen diferenciados en la pestaña Checklist:
+  - Muestran badge de stock 🍽 con color según disponibilidad
+  - Input de cantidad + botón ↑ para agregar
+  - Si ya fue agregado: muestra ✔ (deshabilitado)
+  - Si no hay stock: muestra ✕ (deshabilitado)
+- Al agregar un ítem de vajilla se descuenta la cantidad del stock automáticamente
+- Al cambiar la cantidad en el checklist se recalcula la diferencia y ajusta el stock
+- Al eliminar un ítem de vajilla del checklist, las unidades vuelven al stock
+- **La categoría VAJILLA está bloqueada en el catálogo base**: filtrada del select y validada al guardar
+- `window.devolverStockVajilla(nombre, cantidad)` — función global para devolver stock desde otros módulos
+
 ### Administración / Presupuesto y Pagos
 - Total del evento con máscara de miles al editar (formato `es-AR`)
 - **Pagos parciales**: array `pagos` por evento, cada uno con monto, estado (pendiente/pagado) y factura opcional
@@ -253,17 +271,31 @@ Modal de confirmación de eventos pasados.
 CRUD de personal, asignación a eventos, rotación de estados, WhatsApp, historial, PDF ART.
 
 ### `lista.js`
-Checklist por evento, catálogo en Firestore, PDF checklist. Incluye toda la lógica de checklist general, checklist cocina y de la pestaña 🧊 Cámara:
-- `renderPestanaChecklist()` — render del checklist general y su catálogo
-- `renderPestanaChecklistCocina()` — render del checklist cocina y su catálogo
-- `renderPestanaCamara()` — render de la pestaña cámara
+Checklist general por evento, catálogo en Firestore (`catalogoChecklist`), PDF checklist y toda la lógica de vajilla:
+- `initLista()` — inicializa delegados y carga catálogo
+- `renderPestanaChecklist()` — render del checklist del evento y su catálogo (incluyendo ítems de vajilla con badge de stock)
+- `renderPestanaCatalogo()` — render del catálogo base (sin ítems VAJILLA)
+- `renderPestanaVajilla()` — render de la pestaña vajilla con stock editable
 - `ocultarDetalleTemporalmente()` / `restaurarDetalleSiHaceFalta()` — ocultan y restauran el modal detalle cuando se abre/cierra un checklist desde ahí
-- `ajustarStock(itemId, delta)` — suma/resta stock (siempre usa `Number()`)
+- `ajustarStockVajilla(itemId, delta)` — suma/resta stock vajilla (usa `Number()`)
+- `ajustarStockVajillaDirecto(itemId, nuevoStock)` — edición directa por input
+- `agregarChecklistItem(nombre, categoria, cantidad)` — agrega ítems al checklist; si es VAJILLA, descuenta stock
+- `cambiarCantidadChecklist(index, valor)` — recalcula diferencia de stock vajilla al cambiar cantidad
+- `eliminarChecklistItem(index)` — devuelve `Number(item.cantidad)` al stock vajilla al eliminar
+- `window.devolverStockVajilla(nombre, cantidad)` — función global para devolver stock vajilla desde otros módulos
+
+### `lista-cocina.js`
+Checklist de cocina por evento, catálogo en Firestore (`catalogoChecklistCocina`), pestaña 🧊 Cámara, panadería y PDF cocina:
+- `initListaCocina()` — inicializa delegados y carga catálogo cocina
+- `renderPestanaChecklistCocina()` — render del checklist cocina y su catálogo (incluyendo ítems de cámara con badge de stock)
+- `renderPestanaCatalogoCocina()` — render del catálogo base cocina (sin ítems CAMARA)
+- `renderPestanaCamara()` — render de la pestaña cámara con stock editable
+- `ajustarStock(itemId, delta)` — suma/resta stock cámara (usa `Number()`)
 - `ajustarStockDirecto(itemId, nuevoStock)` — edición directa por input
-- `cambiarCantidadChecklistCocina(index, nuevaCantidad)` — recalcula diferencia de stock al cambiar cantidad
-- `eliminarChecklistCocinaItem(index)` — devuelve `Number(item.cantidad)` al stock al eliminar
-- `agregarChecklistCocinaItem(nombre, categoria, cantidad)` — descuenta stock al agregar
-- `agregarChecklistItem(nombre, categoria, cantidad)` — permite agregar ítems al checklist general con cantidad elegida desde el catálogo
+- `agregarChecklistCocinaItem(nombre, categoria, cantidad)` — agrega ítems al checklist cocina; si es CAMARA, descuenta stock
+- `cambiarCantidadChecklistCocina(index, nuevaCantidad)` — recalcula diferencia de stock cámara al cambiar cantidad
+- `eliminarChecklistCocinaItem(index)` — devuelve `Number(item.cantidad)` al stock cámara al eliminar
+- `enviarPedidoPanaderia()` — arma y abre WhatsApp con el pedido de ítems de categoría PANADERÍA
 
 ### `calendar.js`
 Calendario FullCalendar. Lee eventos de Firestore.
@@ -394,8 +426,8 @@ Calendario FullCalendar. Lee eventos de Firestore.
 - `.detail-pago-resumen--pagado` → verde
 - `.detail-pago-resumen--pendiente` → naranja
 
-### Pestaña Cámara (`css/checklist.css`)
-- `.camara-item` → fila flex, `flex-wrap: nowrap`, una sola línea
+### Pestaña Cámara y Vajilla (`css/checklist.css`)
+- `.camara-item` → fila flex, `flex-wrap: nowrap`, una sola línea (usado para cámara y vajilla)
 - `.camara-item-nombre` → flex 1, nombre del ítem
 - `.camara-item-controles` → flex con botones + / − e input de stock
 - `.camara-stock` → número de stock (ahora es `<input type="number">`, no `<span>`)
@@ -403,11 +435,14 @@ Calendario FullCalendar. Lee eventos de Firestore.
 - `.camara-stock--bajo` → naranja (3 o menos)
 - `.camara-stock--vacio` → rojo (0)
 - `.btn-stock--sumar` / `.btn-stock--restar` → botones circulares verde/rojo
-- `.camara-stock-badge` → badge de stock en la pestaña Checklist (junto al nombre del ítem)
+- `.camara-stock-badge` → badge de stock en la pestaña Checklist (junto al nombre del ítem) — usado para 🧊 cámara y 🍽 vajilla
 - `.camara-cantidad-input--mini` → input de cantidad en checklist (58px)
-- `.btn-camara-mini` → botón redondo naranja con ↑ para agregar al checklist
+- `.btn-camara-mini` → botón redondo naranja con ↑ para agregar al checklist (cocina)
 - `.btn-camara-mini--ya` → verde apagado con ✔ (ya agregado)
 - `.btn-camara-mini--sin-stock` → gris con ✕ (sin stock)
+- `.btn-general-mini` → botón redondo para agregar vajilla al checklist general (mismo estilo que btn-camara-mini)
+- `.btn-general-mini--ya` → verde apagado con ✔ (vajilla ya agregada)
+- `.btn-general-mini--sin-stock` → gris con ✕ (vajilla sin stock)
 
 ---
 
@@ -420,9 +455,12 @@ Calendario FullCalendar. Lee eventos de Firestore.
 - **Campo `paid` se mantiene independiente**: es un booleano de "cobrado total" que coexiste con el array de pagos parciales.
 - **Máscara de miles en montos**: los campos `total` y montos de pagos usan `type="text"` con `inputmode="numeric"`. Se formatean con `toLocaleString("es-AR")` al perder el foco y se limpian al enfocar. Se guarda siempre el número limpio en Firestore.
 - **z-index `#modalAvisoSimple` en 9999**: subido desde 1200 para quedar siempre por encima de cualquier modal apilado (`.modal-checklist` tiene z-index 2600).
-- **Stock de cámara siempre con `Number()`**: todas las operaciones de stock usan `Number()` explícito para evitar concatenación de strings. Afecta `ajustarStock`, `eliminarChecklistCocinaItem` y `cambiarCantidadChecklistCocina`.
+- **Stock de cámara y vajilla siempre con `Number()`**: todas las operaciones de stock usan `Number()` explícito para evitar concatenación de strings. Afecta `ajustarStock`, `ajustarStockVajilla`, `eliminarChecklistCocinaItem`, `eliminarChecklistItem` y las funciones de cambiar cantidad.
 - **Listener `change` en modal de checklist cocina**: maneja dos acciones: `cantidad-checklist-cocina` (cambia cantidad de ítem en checklist) y `editar-stock-directo` (edita stock de cámara con input numérico).
-- **Categoría CAMARA bloqueada en catálogo base**: filtrada del select de categorías y validada al guardar, bloqueando tanto `"CAMARA"` como `"CÁMARA"` (con tilde).
+- **Listener `change` en modal de checklist general**: maneja `cantidad-checklist` (cambia cantidad) y `editar-stock-vajilla` (edita stock de vajilla con input numérico).
+- **Categoría CAMARA bloqueada en catálogo cocina**: filtrada del select y validada al guardar, bloqueando `"CAMARA"` y `"CÁMARA"` (con tilde).
+- **Categoría VAJILLA bloqueada en catálogo general**: filtrada del select y validada al guardar. Los ítems de vajilla solo se agregan desde la pestaña 🍽 Vajilla.
+- **`lista.js` dividido en dos archivos**: checklist general + vajilla en `lista.js`; checklist cocina + cámara + panadería en `lista-cocina.js`. Ambos se inicializan desde `main.js` (`initLista()` e `initListaCocina()`). Los helpers compartidos (`agruparPorCategoria`, `renderCatalogoHTML`, `ocultarDetalleTemporalmente`, `restaurarDetalleSiHaceFalta`) están copiados en ambos archivos para independencia.
 - **Modal detalle + checklist**: al abrir checklist general o cocina desde el detalle, el modal detalle se oculta temporalmente y se restaura al cerrar el checklist. No se cierra definitivamente.
 - **Tipografía del checklist**: para aprovechar mejor el ancho en celular, los nombres de ítems, categorías, tabs y títulos del modal checklist usan `Roboto Condensed`.
 - **Calendario FullCalendar**: los eventos `Presupuestado` (amarillos) muestran el texto en negro para mejorar contraste. En FullCalendar esto se resolvió atacando `.fc-event-title` / `.fc-event-time`, no solo las variables del badge.
@@ -450,4 +488,4 @@ Apunta a resolver tareas reales del día a día.
 
 ---
 
-*Fin del contexto — v6, actualizado 08/04/2026*
+*Fin del contexto — v8, actualizado 09/04/2026*

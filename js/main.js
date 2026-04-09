@@ -5,6 +5,7 @@ import { initCalendar } from "./calendar.js";
 import { initStaff } from "./staff.js";
 import { auth, db } from "./auth.js";
 import { initLista } from "./lista.js";
+import { initListaCocina } from "./lista-cocina.js";
 import { USUARIOS_MAP } from "./events/events-utils.js";
 import {
   onAuthStateChanged,
@@ -283,6 +284,7 @@ document.addEventListener("DOMContentLoaded", () => {
       initCalendar();
       initStaff();
       initLista();
+      initListaCocina();
 
       iniciarEscuchadorNotificaciones();
       window.showSection("calendar");
