@@ -24,6 +24,7 @@ import { initJornadas } from "./events/events-jornadas.js";
 import { initMaps } from "./events/events-maps.js";
 import { initAvisos } from "./events/events-avisos.js";
 import { db, auth, storage } from "./auth.js";
+import { pushModalHistory, popModalHistory } from "./ui.js";
 import { ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
 import { renderStaffSelection } from "./staff.js";
 import {
@@ -420,6 +421,7 @@ function updateStats(events) {
 const mostrarAvisoSimple = window.mostrarAvisoSimple;
 
 function cerrarAvisoSimple() {
+  popModalHistory();
   const modal = document.getElementById("modalAvisoSimple");
   if (modal) modal.style.display = "none";
 }

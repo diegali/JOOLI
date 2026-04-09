@@ -1,4 +1,5 @@
 import { db } from "./auth.js";
+import { pushModalHistory, popModalHistory } from "./ui.js";
 import {
   doc,
   updateDoc,
@@ -261,12 +262,21 @@ window.abrirModalChecklistCocina = function (eventId) {
 
   ocultarDetalleTemporalmente();
   document.getElementById("modalChecklistCocina").style.display = "flex";
+  pushModalHistory(window._cerrarChecklistCocinaSinPop);
 };
 
 window.cerrarModalChecklistCocina = function () {
   const modal = document.getElementById("modalChecklistCocina");
   if (modal) modal.style.display = "none";
 
+  popModalHistory();
+  restaurarDetalleSiHaceFalta();
+  window.eventoChecklistCocinaActual = null;
+};
+
+window._cerrarChecklistCocinaSinPop = function () {
+  const modal = document.getElementById("modalChecklistCocina");
+  if (modal) modal.style.display = "none";
   restaurarDetalleSiHaceFalta();
   window.eventoChecklistCocinaActual = null;
 };

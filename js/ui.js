@@ -46,7 +46,39 @@ export function mostrarAviso(titulo, mensaje, icono = "⚠️", mostrarBoton = t
   iconoEl.textContent = icono;
   if (btnEntendido) btnEntendido.style.display = mostrarBoton ? "inline-block" : "none";
   modal.style.display = "flex";
+  pushModalHistory(() => { modal.style.display = "none"; });
 }
 
 window.mostrarAvisoSimple = mostrarAviso;
 window.mostrarAvisoStaff = mostrarAviso;
+
+// ===============================
+// HISTORIAL — BOTÓN ATRÁS DEL CELU
+// ===============================
+
+const _modalStack = [];
+
+export function pushModalHistory(cerrarFn) {
+  history.pushState({ modal: true }, "");
+  _modalStack.push(cerrarFn);
+}
+
+export function popModalHistory() {
+  if (_modalStack.length > 0) {
+    _modalStack.pop();
+  }
+}
+
+window.addEventListener("popstate", () => {
+  if (_modalStack.length > 0) {
+    const cerrar = _modalStack.pop();
+    cerrar();
+    // Si después del cierre el detalle volvió a abrirse, ya habrá pusheado solo
+  } else {
+    // Stack vacío pero el navegador retrocedió — volver a pushear para no salir
+    if (document.getElementById("modalDetalleEvento")?.style.display === "flex") {
+      history.pushState({ modal: true }, "");
+      _modalStack.push(window.cerrarModalDetalle);
+    }
+  }
+});

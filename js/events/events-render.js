@@ -1,6 +1,7 @@
 // js/events/events-render.js
 
 import { getMonthLabel, formatDate } from "./events-utils.js";
+import { pushModalHistory, popModalHistory } from "../ui.js";
 import { abrirModalPagos } from "../staff.js";
 import { fillFormForEdit } from "./events-form.js";
 
@@ -564,9 +565,11 @@ export function registerEventDetailModal(deps) {
     }
 
     document.getElementById("modalDetalleEvento").style.display = "flex";
+    pushModalHistory(window.cerrarModalDetalle);
   };
 
   window.cerrarModalDetalle = function () {
+    popModalHistory();
     window._detalleEventoAbierto = null;
     document.getElementById("modalDetalleEvento").style.display = "none";
   };

@@ -1,4 +1,4 @@
-# 🧠 CONTEXTO PARA IA – JOOLI CateringDesk (v8 — actualizado 09/04/2026)
+# 🧠 CONTEXTO PARA IA – JOOLI CateringDesk (v9 — actualizado 09/04/2026)
 
 > Pegá este archivo al inicio de cada chat nuevo para trabajar sin subir el proyecto.
 
@@ -214,6 +214,16 @@ export const USUARIOS_MAP = {
 - **La categoría VAJILLA está bloqueada en el catálogo base**: filtrada del select y validada al guardar
 - `window.devolverStockVajilla(nombre, cantidad)` — función global para devolver stock desde otros módulos
 
+### Botón atrás del celular
+- El botón atrás del celu cierra el modal visible más reciente en lugar de salir de la app
+- Implementado con la **History API** (`history.pushState` + evento `popstate`)
+- Cada vez que se abre un modal se pushea una función de cierre al stack (`pushModalHistory`)
+- Cada vez que se cierra un modal con el botón ✕ se hace pop manual del stack (`popModalHistory`)
+- Cuando el botón atrás dispara `popstate`, se ejecuta la función de cierre del tope del stack
+- Modales cubiertos: aviso/confirmación, detalle de evento, gestión de staff, panel Agregar staff, checklist general, checklist cocina, selector de checklist
+- **Detalle importante**: los modales que se abren *desde* el detalle (checklist, staff) usan una variante `_cerrarXxxSinPop` que restaura el detalle visualmente sin llamar a `abrirModalDetalle` — esto evita un bug de timing donde el `pushState` del detalle quedaba pisado por el `popstate` del navegador
+- El stack puede tener hasta 3 niveles: ej. detalle → staff → panel Agregar
+
 ### Administración / Presupuesto y Pagos
 - Total del evento con máscara de miles al editar (formato `es-AR`)
 - **Pagos parciales**: array `pagos` por evento, cada uno con monto, estado (pendiente/pagado) y factura opcional
@@ -269,6 +279,15 @@ Modal de confirmación de eventos pasados.
 
 ### `staff.js`
 CRUD de personal, asignación a eventos, rotación de estados, WhatsApp, historial, PDF ART.
+- `window.cerrarModalGestionStaff()` — cierre desde botón ✕, hace `popModalHistory()` manual
+- `window._cerrarStaffSinPop()` — cierre desde botón atrás del celu, restaura el detalle visualmente sin re-pushearlo
+
+### `ui.js`
+Utilidades visuales menores. Contiene el sistema de botón atrás:
+- `pushModalHistory(cerrarFn)` — pushea un estado al historial del navegador y guarda la función de cierre en un stack interno
+- `popModalHistory()` — saca el último estado del stack (llamado al cerrar un modal con el botón ✕)
+- Listener `popstate` — cuando el usuario toca atrás, ejecuta la función de cierre del tope del stack
+- `mostrarAviso(titulo, mensaje, icono, mostrarBoton)` — función compartida, expuesta como `window.mostrarAvisoSimple` y `window.mostrarAvisoStaff`
 
 ### `lista.js`
 Checklist general por evento, catálogo en Firestore (`catalogoChecklist`), PDF checklist y toda la lógica de vajilla:
@@ -462,6 +481,7 @@ Calendario FullCalendar. Lee eventos de Firestore.
 - **Categoría VAJILLA bloqueada en catálogo general**: filtrada del select y validada al guardar. Los ítems de vajilla solo se agregan desde la pestaña 🍽 Vajilla.
 - **`lista.js` dividido en dos archivos**: checklist general + vajilla en `lista.js`; checklist cocina + cámara + panadería en `lista-cocina.js`. Ambos se inicializan desde `main.js` (`initLista()` e `initListaCocina()`). Los helpers compartidos (`agruparPorCategoria`, `renderCatalogoHTML`, `ocultarDetalleTemporalmente`, `restaurarDetalleSiHaceFalta`) están copiados en ambos archivos para independencia.
 - **Modal detalle + checklist**: al abrir checklist general o cocina desde el detalle, el modal detalle se oculta temporalmente y se restaura al cerrar el checklist. No se cierra definitivamente.
+- **Botón atrás del celu — patrón de cierre doble**: los modales que se abren desde el detalle (checklist, staff) tienen dos funciones de cierre: la normal (con `popModalHistory()`) para el botón ✕, y una `_cerrarXxxSinPop` (sin pop) para cuando el botón atrás ya consumió el estado. La versión sin pop restaura el detalle manipulando el DOM directamente (`visibility/pointerEvents`) en lugar de llamar a `abrirModalDetalle`, evitando que el `pushState` quede pisado por el `popstate` en curso. El panel "Agregar" de staff es un sub-panel dentro del modal de staff (no un modal separado) y también está cubierto por el stack.
 - **Tipografía del checklist**: para aprovechar mejor el ancho en celular, los nombres de ítems, categorías, tabs y títulos del modal checklist usan `Roboto Condensed`.
 - **Calendario FullCalendar**: los eventos `Presupuestado` (amarillos) muestran el texto en negro para mejorar contraste. En FullCalendar esto se resolvió atacando `.fc-event-title` / `.fc-event-time`, no solo las variables del badge.
 
@@ -488,4 +508,4 @@ Apunta a resolver tareas reales del día a día.
 
 ---
 
-*Fin del contexto — v8, actualizado 09/04/2026*
+*Fin del contexto — v9, actualizado 09/04/2026*

@@ -1,4 +1,5 @@
 import { db } from "./auth.js";
+import { pushModalHistory, popModalHistory } from "./ui.js";
 import {
   doc,
   updateDoc,
@@ -296,12 +297,21 @@ window.abrirModalChecklist = function (eventId) {
 
   ocultarDetalleTemporalmente();
   document.getElementById("modalChecklist").style.display = "flex";
+  pushModalHistory(window._cerrarChecklistSinPop);
 };
 
 window.cerrarModalChecklist = function () {
   const modal = document.getElementById("modalChecklist");
   if (modal) modal.style.display = "none";
 
+  popModalHistory();
+  restaurarDetalleSiHaceFalta();
+  window.eventoChecklistActual = null;
+};
+
+window._cerrarChecklistSinPop = function () {
+  const modal = document.getElementById("modalChecklist");
+  if (modal) modal.style.display = "none";
   restaurarDetalleSiHaceFalta();
   window.eventoChecklistActual = null;
 };
@@ -803,12 +813,13 @@ window.abrirSelectorChecklist = function () {
 
   const modal = document.getElementById("modalSelectorChecklist");
   if (modal) modal.style.display = "flex";
+  pushModalHistory(window.cerrarSelectorChecklist);
 };
 
 window.cerrarSelectorChecklist = function () {
   const modal = document.getElementById("modalSelectorChecklist");
   if (modal) modal.style.display = "none";
-
+  popModalHistory();
   restaurarDetalleSiHaceFalta();
 };
 

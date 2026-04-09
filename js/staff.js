@@ -1,4 +1,5 @@
 import { db } from "./auth.js";
+import { pushModalHistory, popModalHistory } from "./ui.js";
 import {
   collection,
   addDoc,
@@ -597,9 +598,10 @@ window.abrirModalGestionStaff = async function (eventId) {
   }
 
   modal.style.display = "flex";
+  pushModalHistory(window._cerrarStaffSinPop);
 };
 
-window.cerrarModalGestionStaff = function () {
+function _cerrarStaffBase() {
   const modal = document.getElementById("modalGestionStaff");
   const panel = document.getElementById("contenedorSeleccionStaff");
   const boton = document.getElementById("btnAbrirSeleccion");
@@ -611,15 +613,32 @@ window.cerrarModalGestionStaff = function () {
   if (boton) boton.innerText = "+ Agregar";
   if (listaStaff) listaStaff.classList.remove("staff-disabled");
   if (modal) modal.style.display = "none";
+  window._modoStaffJornada = false;
+  if (modal) modal.dataset.jornadaIdx = "";
+}
+
+// Cierre desde botón ✕ — hace pop manual del stack
+window.cerrarModalGestionStaff = function () {
+  popModalHistory();
+  _cerrarStaffBase();
   // Volver al detalle si venimos de ahí
   if (window._detalleEventoAbierto) {
     window.abrirModalDetalle(window._detalleEventoAbierto);
     window._detalleEventoAbierto = null;
   }
+};
 
-  // Limpiar modo jornada
-  window._modoStaffJornada = false;
-  if (modal) modal.dataset.jornadaIdx = "";
+// Cierre desde botón atrás del celu — el stack ya fue consumido por popstate
+window._cerrarStaffSinPop = function () {
+  _cerrarStaffBase();
+  if (window._detalleEventoAbierto) {
+    const modalDetalle = document.getElementById("modalDetalleEvento");
+    if (modalDetalle && modalDetalle.style.display === "flex") {
+      modalDetalle.style.visibility = "visible";
+      modalDetalle.style.pointerEvents = "auto";
+      delete modalDetalle.dataset.ocultoPorChecklist;
+    }
+  }
 };
 
 // ===============================
@@ -706,7 +725,14 @@ async function togglePanelSeleccionStaff() {
     boton.innerText = "Cancelar";
     listaStaff.classList.add("staff-disabled");
     if (btnCerrarModal) btnCerrarModal.style.display = "none";
+    pushModalHistory(() => {
+      panel.style.display = "none";
+      boton.innerText = "+ Agregar";
+      listaStaff.classList.remove("staff-disabled");
+      if (btnCerrarModal) btnCerrarModal.style.display = "inline-flex";
+    });
   } else {
+    popModalHistory();
     panel.style.display = "none";
     boton.innerText = "+ Agregar";
     listaStaff.classList.remove("staff-disabled");
