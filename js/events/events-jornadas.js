@@ -129,6 +129,13 @@ export function initJornadas() {
     }
   };
 
+  window.copiarStaffJornada = function (index) {
+    const anterior = window._jornadasActuales[index - 1];
+    if (!anterior?.mensajesEnviados?.length) return;
+    window._jornadasActuales[index].mensajesEnviados = anterior.mensajesEnviados.map(m => ({ ...m }));
+    window.renderJornadas();
+  };
+
   window.actualizarAlquilerJornada = function (index, campo, valor) {
     if (!window._jornadasActuales?.[index]) return;
     if (!window._jornadasActuales[index].alquileres) {
@@ -236,6 +243,10 @@ export function initJornadas() {
         </div>
 
         <div class="jornada-acciones">
+          ${i > 0 && window._jornadasActuales[i - 1]?.mensajesEnviados?.length > 0 ? `
+          <button type="button" onclick="window.copiarStaffJornada(${i})" class="btn-jornada-copiar-staff">
+            📋 Copiar staff jornada ${i}
+          </button>` : ""}
           <button type="button" onclick="window.abrirStaffJornada(${i})" class="btn-jornada-staff">
             🤵 Staff
             ${j.mensajesEnviados?.length > 0

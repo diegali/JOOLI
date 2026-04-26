@@ -740,3 +740,16 @@
 .pagos-saldo--negativo {
   color: #c0392b;
 }
+
+.btn-copiar-staff-anterior {
+  width: 100%;
+  padding: 8px 12px;
+  margin-bottom: 8px;
+  background: var(--bg-secondary);
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  cursor: pointer;
+  text-align: center;
+}

@@ -540,6 +540,32 @@ window.abrirModalGestionStaff = async function (eventId) {
   const activos = confirmados + pendientes;
   const faltan = Math.max(staffNecesario - activos, 0);
 
+  // Botón copiar staff de jornada anterior
+  const btnCopiarStaff = document.getElementById("btnCopiarStaffAnterior");
+  if (btnCopiarStaff) {
+    const jornadaAnterior = esJornada && jornadaIdx > 0 ? evento.jornadas[jornadaIdx - 1] : null;
+    const tieneStaffAnterior = jornadaAnterior?.mensajesEnviados?.length > 0;
+    if (esJornada && jornadaIdx > 0 && tieneStaffAnterior && !soloLectura) {
+      btnCopiarStaff.style.display = "inline-flex";
+      btnCopiarStaff.onclick = async function () {
+        const staffCopiado = jornadaAnterior.mensajesEnviados.map(m => ({ ...m, estado: "pendiente", whatsappEnviado: false }));
+        staffSource.mensajesEnviados = staffCopiado;
+        evento.jornadas[jornadaIdx].mensajesEnviados = staffCopiado;
+        if (window._jornadasActuales?.[jornadaIdx]) {
+          window._jornadasActuales[jornadaIdx].mensajesEnviados = staffCopiado;
+        }
+        try {
+          await updateDoc(doc(db, "events", eventId), { jornadas: evento.jornadas });
+          window.abrirModalGestionStaff(eventId);
+        } catch (e) {
+          console.error("Error copiando staff:", e);
+        }
+      };
+    } else {
+      btnCopiarStaff.style.display = "none";
+    }
+  }
+
   if (resumen) {
     const linea1 = mensajes.length === 0
       ? "Sin staff asignado"
